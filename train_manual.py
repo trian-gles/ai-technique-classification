@@ -3,6 +3,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow_io as tfio
+import seaborn as sns
 
 import time
 
@@ -21,13 +22,12 @@ techniques = np.array(tf.io.gfile.listdir(path))
 filenames = tf.io.gfile.glob(path + '/*/*')
 filenames = tf.random.shuffle(filenames)
 num_samples = len(filenames)
-print(filenames[3])
 
 AUTOTUNE = tf.data.AUTOTUNE
-#     TypeError: Cannot convert a list containing a tensor of dtype <dtype: 'int32'> to <dtype: 'float32'> (Tensor is: <tf.Tensor 'DecodeWav:1' shape=() dtype=int32>)
+#     TypeError: Cannot convert a list containing a tensor of dtype <dtype: 'ßint32'> to <dtype: 'float32'> (Tensor is: <tf.Tensor 'DecodeWav:1' shape=() dtype=int32>)
 def get_waveform_and_label(path: str):
     bin = tf.io.read_file(path)
-    audio = tf.audio.decode_wav(bin) # somewhere here it breaks.......
+    audio, _ = tf.audio.decode_wav(bin) # somewhere here it breaks.......
     tf.cast(audio, tf.float32)
     return tf.squeeze(audio, axis=-1), get_label(path)
 
@@ -36,7 +36,7 @@ def get_label(file_path: str):
     return parts[-2]
 
 def get_spectrogram(waveform: tf.Tensor):
-    zero_padding = tf.zeros([16000] - tf.shape(waveform), dtype=tf.float32)
+    zero_padding = tf.zeros([320000] - tf.shape(waveform), dtype=tf.float32) #fix this so the padding isn't huge
 
     waveform = tf.cast(waveform, tf.float32)
     equal_length = tf.concat([waveform, zero_padding], 0)
@@ -57,19 +57,6 @@ def test_map_fn(idk):
     time.sleep(0.5)
     return idk
 
-train_files = filenames[:120]
-val_files = filenames[120:150]
-test_files = filenames[150:]
-files_ds = tf.data.Dataset.from_tensor_slices(train_files)
-test_ds = files_ds.map(test_map_fn, num_parallel_calls=AUTOTUNE)
-for ts in test_ds:
-    print(ts)
-
-waveform_ds = files_ds.map(get_waveform_and_label, num_parallel_calls=AUTOTUNE)
-for ts in waveform_ds:
-    print(ts)
-spectrogram_ds = waveform_ds.map(get_spectrogram_and_label_id, num_parallel_calls=AUTOTUNE)
-
 def plot_waveforms(dataset: tf.data.Dataset):
     rows = 3
     cols = 3
@@ -77,20 +64,14 @@ def plot_waveforms(dataset: tf.data.Dataset):
     sampleset = iter(dataset)
     fig, axes = plt.subplots(rows, cols, figsize=(10, 12))
     for i in range(n):
-        successful = False
-        while not successful:
-            try:
-                audio, label= next(sampleset)
-            except:
-                continue
-            r = i // cols
-            c = i % cols
-            ax = axes[r][c]
-            ax.plot(audio.numpy())
-            ax.set_yticks(np.arange(-1.2, 1.2, 0.2))
-            label = label.numpy().decode('utf-8')
-            ax.set_title(label)
-            successful = True
+        audio, label= next(sampleset)
+        r = i // cols
+        c = i % cols
+        ax = axes[r][c]
+        ax.plot(audio.numpy())
+        ax.set_yticks(np.arange(-1.2, 1.2, 0.2))
+        label = label.numpy().decode('utf-8')
+        ax.set_title(label)
     plt.show()
 
 
@@ -110,18 +91,13 @@ def plot_spectrograms(dataset: tf.data.Dataset):
     sampleset = iter(dataset)
     fig, axes = plt.subplots(rows, cols, figsize=(10, 12))
     for i in range(n):
-        successful = False
-        while not successful:
-            try:
-                spectrogram, label_id = next(sampleset)
-            except:
-                continue
-            r = i // cols
-            c = i % cols
-            ax = axes[r][c]
-            plot_spectrogram(np.squeeze(spectrogram.numpy()), ax)
-            ax.set_title(techniques[label_id.numpy()])
-            successful = True
+        spectrogram, label_id = next(sampleset)
+        r = i // cols
+        c = i % cols
+        ax = axes[r][c]
+        plot_spectrogram(np.squeeze(spectrogram.numpy()), ax)
+        ax.set_title(techniques[label_id.numpy()])
+        successful = True
     plt.show()
 
 
@@ -132,9 +108,26 @@ def preprocess_dataset(files: list):
         get_spectrogram_and_label_id, num_parallel_calls=AUTOTUNE)
     return output_ds
 
+train_files = filenames[:120]
+val_files = filenames[120:150]
+test_files = filenames[150:]
+files_ds = tf.data.Dataset.from_tensor_slices(train_files)
+for ts in files_ds.take(1):
+    print(get_waveform_and_label(ts))
+waveform_ds = files_ds.map(get_waveform_and_label, num_parallel_calls=AUTOTUNE)
+#plot_waveforms(waveform_ds)
+spectrogram_ds = waveform_ds.map(get_spectrogram_and_label_id, num_parallel_calls=AUTOTUNE)
+
+
+
 train_ds = spectrogram_ds
 val_ds = preprocess_dataset(val_files)
 test_ds = preprocess_dataset(test_files)
+#plot_spectrograms(train_ds)
+
+
+
+
 
 batch_size = 64
 train_ds = train_ds.batch(batch_size)
@@ -142,35 +135,24 @@ val_ds = val_ds.batch(batch_size)
 train_ds = train_ds.cache().prefetch(AUTOTUNE)
 val_ds = val_ds.cache().prefetch(AUTOTUNE)
 
+
+
+
+
+
 sampleset = iter(spectrogram_ds)
 for i in range(1):
-    successful = False
-    while not successful:
-        try:
-            spectrogram, _ = next(sampleset)
-        except:
-            continue
-        successful = True
-        input_shape = spectrogram.shape
+    spectrogram, _ = next(sampleset)
+    successful = True
+    input_shape = spectrogram.shape
 
 print('Input shape:', input_shape)
 num_labels = len(techniques)
 
 norm_layer = preprocessing.Normalization()
-successful = False
-while not successful:
-    try:
-        just_features = spectrogram_ds.map(lambda x, _: x)
-    except:
-        continue
-    successful = True
+just_features = spectrogram_ds.map(lambda x, _: x)
 
-while not successful:
-    try:
-        norm_layer.adapt(just_features)
-    except:
-        continue
-    successful = True
+norm_layer.adapt(just_features)
 
 
 model = models.Sequential([
@@ -196,7 +178,6 @@ model.compile(
 )
 
 
-print(spectrogram_ds.element_spec)
 
 EPOCHS = 10
 history = model.fit(
@@ -205,3 +186,32 @@ history = model.fit(
     epochs=EPOCHS,
     callbacks=tf.keras.callbacks.EarlyStopping(verbose=1, patience=2),
 )
+
+metrics = history.history
+plt.plot(history.epoch, metrics['loss'], metrics['val_loss'])
+plt.legend(['loss', 'val_loss'])
+plt.show()
+
+test_audio = []
+test_labels = []
+
+for audio, label in test_ds:
+  test_audio.append(audio.numpy())
+  test_labels.append(label.numpy())
+
+test_audio = np.array(test_audio)
+test_labels = np.array(test_labels)
+
+y_pred = np.argmax(model.predict(test_audio), axis=1)
+y_true = test_labels
+
+test_acc = sum(y_pred == y_true) / len(y_true)
+print(f'Test set accuracy: {test_acc:.0%}')
+
+confusion_mtx = tf.math.confusion_matrix(y_true, y_pred)
+plt.figure(figsize=(10, 8))
+sns.heatmap(confusion_mtx, xticklabels=techniques, yticklabels=techniques,
+            annot=True, fmt='g')
+plt.xlabel('Prediction')
+plt.ylabel('Label')
+plt.show()
