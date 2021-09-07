@@ -17,7 +17,8 @@ path = os.path.join(dir_path, "samples/manual")
 
 
 
-techniques = np.array(tf.io.gfile.listdir(path))
+techniques = (tf.io.gfile.listdir(path))
+print(techniques)
 
 filenames = tf.io.gfile.glob(path + '/*/*')
 filenames = tf.random.shuffle(filenames)
@@ -36,7 +37,8 @@ def get_label(file_path: str):
     return parts[-2]
 
 def get_spectrogram(waveform: tf.Tensor):
-    zero_padding = tf.zeros([320000] - tf.shape(waveform), dtype=tf.float32) #fix this so the padding isn't huge
+    #if waveform.shape[0] > 16000:
+    zero_padding = tf.zeros([16000] - tf.shape(waveform), dtype=tf.float32) #fix this so the padding isn't huge
 
     waveform = tf.cast(waveform, tf.float32)
     equal_length = tf.concat([waveform, zero_padding], 0)
@@ -112,10 +114,10 @@ train_files = filenames[:120]
 val_files = filenames[120:150]
 test_files = filenames[150:]
 files_ds = tf.data.Dataset.from_tensor_slices(train_files)
-for ts in files_ds.take(1):
-    print(get_waveform_and_label(ts))
+for ts in files_ds.take(9):
+    print(get_spectrogram(get_waveform_and_label(ts)[0]))
 waveform_ds = files_ds.map(get_waveform_and_label, num_parallel_calls=AUTOTUNE)
-#plot_waveforms(waveform_ds)
+plot_waveforms(waveform_ds)
 spectrogram_ds = waveform_ds.map(get_spectrogram_and_label_id, num_parallel_calls=AUTOTUNE)
 
 
@@ -123,7 +125,7 @@ spectrogram_ds = waveform_ds.map(get_spectrogram_and_label_id, num_parallel_call
 train_ds = spectrogram_ds
 val_ds = preprocess_dataset(val_files)
 test_ds = preprocess_dataset(test_files)
-#plot_spectrograms(train_ds)
+plot_spectrograms(train_ds)
 
 
 
