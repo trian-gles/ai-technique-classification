@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow_io as tfio
 import seaborn as sns
+import simpleaudio
 
 import time
 
@@ -16,7 +17,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 path = os.path.join(dir_path, "samples/manual")
 
 
-
+soundfiles = []
 techniques = (tf.io.gfile.listdir(path))
 print(techniques)
 
@@ -59,6 +60,13 @@ def test_map_fn(idk):
     time.sleep(0.5)
     return idk
 
+def on_press(event):
+    sample_i = int(event.key) - 1
+    filenam = filenames[sample_i].numpy().decode('utf-8')
+    wave_obj = simpleaudio.WaveObject.from_wave_file(filenam)
+    play_obj = wave_obj.play()
+    play_obj.wait_done()
+
 def plot_waveforms(dataset: tf.data.Dataset):
     rows = 3
     cols = 3
@@ -67,12 +75,13 @@ def plot_waveforms(dataset: tf.data.Dataset):
     fig, axes = plt.subplots(rows, cols, figsize=(10, 12))
     for i in range(n):
         audio, label= next(sampleset)
+        soundfiles.append(audio)
         r = i // cols
         c = i % cols
         ax = axes[r][c]
         ax.plot(audio.numpy())
         ax.set_yticks(np.arange(-1.2, 1.2, 0.2))
-        label = label.numpy().decode('utf-8')
+        label = str(i + 1) + " - " + label.numpy().decode('utf-8')
         ax.set_title(label)
     plt.show()
 
@@ -92,14 +101,14 @@ def plot_spectrograms(dataset: tf.data.Dataset):
     n = rows * cols
     sampleset = iter(dataset)
     fig, axes = plt.subplots(rows, cols, figsize=(10, 12))
+    fig.canvas.mpl_connect('key_press_event', on_press)
     for i in range(n):
         spectrogram, label_id = next(sampleset)
         r = i // cols
         c = i % cols
         ax = axes[r][c]
         plot_spectrogram(np.squeeze(spectrogram.numpy()), ax)
-        ax.set_title(techniques[label_id.numpy()])
-        successful = True
+        ax.set_title(str(i) + " - " + techniques[label_id.numpy()])
     plt.show()
 
 
@@ -114,8 +123,6 @@ train_files = filenames[:120]
 val_files = filenames[120:150]
 test_files = filenames[150:]
 files_ds = tf.data.Dataset.from_tensor_slices(train_files)
-for ts in files_ds.take(9):
-    print(get_spectrogram(get_waveform_and_label(ts)[0]))
 waveform_ds = files_ds.map(get_waveform_and_label, num_parallel_calls=AUTOTUNE)
 plot_waveforms(waveform_ds)
 spectrogram_ds = waveform_ds.map(get_spectrogram_and_label_id, num_parallel_calls=AUTOTUNE)
