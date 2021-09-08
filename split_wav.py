@@ -5,12 +5,19 @@ import simpleaudio as sa
 import numpy as np
 import matplotlib.pyplot as plt
 from random import shuffle
+import sounddevice as sd
+
+playback_samps = []
+def on_press(event):
+    sample_i = int(event.key) - 1
+    sd.play(playback_samps[sample_i], 22050)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 path = os.path.join(dir_path, "samples/unsorted")
 filenames = map(lambda f: os.path.join(path, f), os.listdir(path))
 for filename in filenames:
     y, sr = librosa.load(filename)
+
     print(max(y))
     onsets = librosa.onset.onset_detect(y, sr, backtrack=True, units='samples')
     onsets_time = librosa.onset.onset_detect(y, sr, backtrack=True, units='time')
@@ -31,10 +38,12 @@ for filename in filenames:
         segments.append(y[last_onset:on])
         last_onset = on
 
-    shuffle(segments)
+    playback_samps = segments.copy()
+    shuffle(playback_samps)
     fig, ax = plt.subplots(3, 3)
-    for i, segment in enumerate(segments[:9]):
+    fig.canvas.mpl_connect('key_press_event', on_press)
+    for i, segment in enumerate(playback_samps[:9]):
         r = i // 3
         c = i % 3
-        librosa.display.waveshow(segment, sr=sr, ax=ax[r][c])
+        librosa.display.waveshow(playback_samps[i], sr=sr, ax=ax[r][c])
     plt.show()
