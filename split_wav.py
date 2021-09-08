@@ -35,7 +35,10 @@ for filename in filenames:
     last_onset = 0
     for on in onsets:
         print(f"splitting from {last_onset} to {on}")
-        segments.append(y[last_onset:on])
+        new_seg = y[last_onset:on]
+        peak = np.max(np.abs(new_seg))
+        if peak > 0.07:
+            segments.append(new_seg)
         last_onset = on
 
     playback_samps = segments.copy()
@@ -45,5 +48,6 @@ for filename in filenames:
     for i, segment in enumerate(playback_samps[:9]):
         r = i // 3
         c = i % 3
+
         librosa.display.waveshow(playback_samps[i], sr=sr, ax=ax[r][c])
     plt.show()
