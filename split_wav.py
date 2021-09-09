@@ -52,6 +52,7 @@ def on_press(event):
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 path = os.path.join(dir_path, "samples/unsorted")
+sorted_dir = os.path.join(dir_path, "samples/sorted")
 save_path = os.path.join(dir_path, "samples/manual")
 filenames = map(lambda f: os.path.join(path, f), os.listdir(path))
 for filename in filenames:
@@ -94,5 +95,10 @@ for filename in filenames:
         print("Writing file " + name)
         fullpath = os.path.join(tech_dir, name)
         sf.write(fullpath, s, sr)
+
+    basename = os.path.basename(filename)
+    new_full_path = os.path.join(sorted_dir, basename)
+    os.rename(filename, new_full_path)
+
 
 
