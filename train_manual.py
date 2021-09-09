@@ -120,9 +120,9 @@ def preprocess_dataset(files: list):
         get_spectrogram_and_label_id, num_parallel_calls=AUTOTUNE)
     return output_ds
 
-train_files = filenames[:120]
-val_files = filenames[120:150]
-test_files = filenames[150:]
+train_files = filenames[:4000]
+val_files = filenames[4000:4400]
+test_files = filenames[4400:]
 files_ds = tf.data.Dataset.from_tensor_slices(train_files)
 waveform_ds = files_ds.map(get_waveform_and_label, num_parallel_calls=AUTOTUNE)
 plot_waveforms(waveform_ds)

@@ -8,6 +8,7 @@ import sounddevice as sd
 import soundfile as sf
 import string
 
+## need to do detailed analysis on rejected samples
 
 def random_string() -> str:
     name = ''
