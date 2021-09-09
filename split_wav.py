@@ -1,7 +1,6 @@
 import librosa
 import librosa.display
 import os
-import simpleaudio as sa
 import numpy as np
 import matplotlib.pyplot as plt
 from random import shuffle, choice
@@ -18,6 +17,8 @@ def random_string() -> str:
 
 
 def plot_wf(y: np.array, sr: int) -> None:
+
+
     onsets_time = librosa.onset.onset_detect(y, sr, backtrack=True, units='time')
 
     S = librosa.feature.melspectrogram(y=y, sr=sr)
@@ -30,12 +31,17 @@ def plot_wf(y: np.array, sr: int) -> None:
     plt.show()
 
 
+def play_excerpt(y: np.array, sr: int) -> None:
+    sd.play(y[:sr * 8], sr)
+
+
 def plot_segments(samps: [], sr: int) -> None:
+    fig, ax = plt.subplots(3, 3)
+    fig.canvas.mpl_connect('key_press_event', on_press)
     for i, segment in enumerate(samps):
         r = i // 3
         c = i % 3
-
-        librosa.display.waveshow(playback_samps[i], sr=sr, ax=ax[r][c])
+        librosa.display.waveshow(samps[i], sr=sr, ax=ax[r][c])
     plt.show()
 
 
@@ -49,30 +55,42 @@ path = os.path.join(dir_path, "samples/unsorted")
 save_path = os.path.join(dir_path, "samples/manual")
 filenames = map(lambda f: os.path.join(path, f), os.listdir(path))
 for filename in filenames:
-    tech_name = input("Enter technique name")
-    y, sr = librosa.load(filename)
-    onsets = librosa.onset.onset_detect(y, sr, backtrack=True, units='samples')
 
+
+    y, sr = librosa.load(filename)
+    play_excerpt(y, sr)
+    tech_name = input("Enter technique name")
+    onsets = librosa.onset.onset_detect(y, sr, backtrack=True, units='samples')
+    plot_wf(y, sr)
 
     segments = []
     last_onset = 0
     for on in onsets:
         new_seg = y[last_onset:on]
+        last_onset = on
+        if len(new_seg) < 1000:
+            continue
         peak = np.max(np.abs(new_seg))
         if peak > 0.07:
             segments.append(new_seg)
-        last_onset = on
 
+
+    print(f"Total samples : {len(segments)}")
     playback_samps = segments.copy()
     shuffle(playback_samps)
-    fig, ax = plt.subplots(3, 3)
-    fig.canvas.mpl_connect('key_press_event', on_press)
+    plot_segments(playback_samps[:9], sr)
 
-
+    current_samp_count = 0 # the current number of samples already saved
     tech_dir = os.path.join(save_path, tech_name)
-    os.mkdir(os.path.join(save_path, tech_name))
-    for s in segments:
-        name = random_string() + ".wav"
+    try:
+        os.mkdir(tech_dir)
+    except FileExistsError: # if there are any samples already saved
+        print(f"directory for technique '{tech_name}' already exists, appending new samples")
+
+        current_samp_count = len(os.listdir(tech_dir))
+
+    for i, s in enumerate(segments):
+        name = tech_name + str(current_samp_count + i) + ".wav"
         print("Writing file " + name)
         fullpath = os.path.join(tech_dir, name)
         sf.write(fullpath, s, sr)

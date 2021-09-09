@@ -38,7 +38,8 @@ def get_label(file_path: str):
     return parts[-2]
 
 def get_spectrogram(waveform: tf.Tensor):
-    #if waveform.shape[0] > 16000:
+    if tf.shape(waveform) > 16000:
+        waveform = waveform[:16000]
     zero_padding = tf.zeros([16000] - tf.shape(waveform), dtype=tf.float32) #fix this so the padding isn't huge
 
     waveform = tf.cast(waveform, tf.float32)
