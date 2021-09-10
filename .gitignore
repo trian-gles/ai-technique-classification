@@ -3,3 +3,4 @@
 /samples/auto/*
 /samples/unsorted/*
 /samples/sorted/*
+/libs/*.so
