@@ -7,6 +7,7 @@ from random import shuffle, choice
 import sounddevice as sd
 import soundfile as sf
 import string
+from utilities import find_onsets
 
 ## need to do detailed analysis on rejected samples
 
@@ -62,7 +63,7 @@ for filename in filenames:
     y, sr = librosa.load(filename)
     play_excerpt(y, sr)
     tech_name = input("Enter technique name")
-    onsets = librosa.onset.onset_detect(y, sr, backtrack=True, units='samples')
+    onsets = find_onsets(y, sr)
     plot_wf(y, sr)
 
     segments = []

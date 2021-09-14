@@ -1,5 +1,5 @@
 from pyo import *
-import librosa
+import utilities
 import numpy as np
 import multiprocessing as mp
 import ctypes
@@ -39,13 +39,9 @@ def sub_process(buf):
         np_arr: np.ndarray = np.frombuffer(buf.get_obj())
         copied_arr = np_arr.copy()
         del np_arr
-    onsets: np.ndarray = librosa.onset.onset_detect(copied_arr, sr=44100, backtrack=True, normalize=False) # I need to set up an envelope equation in advance
+    onsets: np.ndarray = utilities.find_onsets(copied_arr, 22050)
     print(f"new onsets in sub process: {onsets}")
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
