@@ -1,60 +1,50 @@
 from pyo import *
 import librosa
 import numpy as np
-
-# this all needs to be threaded
-
-
-s = Server().boot()
-
-t = NewTable(length=2)
-
-inp = Input()
-
-rec = TableRec(inp, table=t).play()
-
-first_buf_update = False
-buffer = np.array([], dtype=np.float32)
+import multiprocessing as mp
+import ctypes
 
 
-def parse_note(arr: np.ndarray):
-    print(arr)
+def main():
+    buffer_size = 2
 
+    s = Server().boot()
+    sr = int(s.getSamplingRate())
+    t = NewTable(length=buffer_size)
 
-def check_buffer_attacks():
-    global buffer
-    global first_buf_update
-    onsets: np.ndarray = librosa.onset.onset_detect(buffer, sr=44100, backtrack=True)
-    if len(onsets > 1):
-        last_onset = onsets[len(onsets) - 1]
+    inp = Input()
 
-
-        parseable_buffer = buffer[:last_onset] # we want to save the last onset for when more data is added to the buffer
-
-        if not first_buf_update:
-            parse_note(parseable_buffer[:onsets[0]])
-
-        first_buf_update = False
-
-        for i, point in enumerate(onsets):
-            if not  (point == last_onset):
-                parse_note(parseable_buffer[point:onsets[i + 1]])
-
-        buffer = buffer[:last_onset] # the buffer now starts at the last attack
+    rec = TableRec(inp, table=t).play()
+    buffer_size = 2
+    buf = mp.Array(ctypes.c_float, buffer_size * sr * 2)
 
 
 
-def update_buffer():
-    global buffer
-    y = np.asarray(t.getBuffer())
-    rec.play()
-    buffer = np.concatenate((buffer, y))
-    check_buffer_attacks()
+
+    tf = TrigFunc(rec["trig"], init_analysis_sub, arg=(buf, t, rec))
+
+    s.gui(locals())
 
 
-tf = TrigFunc(rec["trig"], update_buffer)
+def init_analysis_sub(tup): # because trigfunc only can send one arg, I use a tuple
+    np_arr = np.frombuffer(tup[0].get_obj())
+    np_arr[:] = np.array(tup[1].getBuffer())[:] # copy the buffer into the new np array.  at the moment, this will drop notes at the beginning and end of the buffer
+    p = mp.Process(target=sub_process, args = (tup[0],))
+    p.start()
+    tup[2].play()
 
-s.gui(locals())
+
+def sub_process(buf):
+    with buf:
+        np_arr: np.ndarray = np.frombuffer(buf.get_obj())
+        copied_arr = np_arr.copy()
+        del np_arr
+    onsets: np.ndarray = librosa.onset.onset_detect(copied_arr, sr=44100, backtrack=True, normalize=False) # I need to set up an envelope equation in advance
+    print(f"new onsets in sub process: {onsets}")
+
+
+if __name__ == "__main__":
+    main()
 
 
 
