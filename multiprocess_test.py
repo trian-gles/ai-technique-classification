@@ -7,8 +7,6 @@ from multiprocessing import Lock, Process, Queue, current_process, Value
 import queue
 import librosa
 
-####### FIX THIS SO THAT TECHNIQUES ARE PROPERLY ORDERED $$$$$
-
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
 
@@ -94,8 +92,7 @@ def main():
 
     sample_files = [f"samples/manual/chord/chord{i}.wav" for i in range(10, 196)]
 
-    for f in sample_files:
-        unidentified_notes.put(librosa.load(f)[0])
+
 
     for w in range(number_of_processes):
         p = Process(target=identification_process,
@@ -111,6 +108,10 @@ def main():
 
     identified_notes_count = 0
     ready_to_quit = False
+    for f in sample_files:
+        unidentified_notes.put(librosa.load(f)[0])
+        time.sleep(0.2)
+
     while True:
         if identified_notes_count == len(sample_files):
             ready_to_quit = True
