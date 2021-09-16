@@ -14,7 +14,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
 
 
 def get_waveform(audio, tf):
-    tf.convert_to_tensor(audio)
+    audio = tf.convert_to_tensor(audio)
 
     tf.cast(audio, tf.float32)
     return audio
@@ -52,7 +52,6 @@ def parse_result(prediction, tf):
 def identification_process(unidentified_notes: Queue, identified_notes: Queue,
                            ready_count: Value, finished: Value, ready: Value):
     import tensorflow as tfp
-    techniques = []
     print(f"Starting process {current_process().name}")
     model = tfp.keras.models.load_model("savedModel")
     print(f"Model loaded for {current_process().name}")
@@ -79,7 +78,10 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
 
 
 def main():
-    techniques = ["_", "smack", "idk", "tasto"]
+
+
+    techniques = os.listdir("samples/manual")
+    print(techniques)
     number_of_processes = 3
 
     unidentified_notes = Queue()  # stores waveforms of prepared notes that must be identified
@@ -113,7 +115,11 @@ def main():
         if identified_notes_count == len(sample_files):
             ready_to_quit = True
         if not identified_notes.empty():
-            print(f"New identified note in main process: {identified_notes.get()}")
+
+            str_results = list(map(lambda i: techniques[i], identified_notes.get()))
+            str_results = str_results[0:-1]
+            str_results.reverse()
+            print(f"New identified note in main process: {str_results}")
             identified_notes_count += 1
         if ready_to_quit:
             finished.value = 1
