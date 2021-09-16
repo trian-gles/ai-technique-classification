@@ -6,6 +6,7 @@ import time
 from multiprocessing import Lock, Process, Queue, current_process, Value
 import queue
 import librosa
+from utilities import find_onsets
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
@@ -20,20 +21,20 @@ def get_waveform(audio, tf):
 
 
 def get_spectrogram(waveform, tf):
+      if tf.shape(waveform) > 16000:
+        waveform = waveform[:16000]
+      zero_padding = tf.zeros([16000] - tf.shape(waveform), dtype=tf.float32)  # fix this so the padding isn't huge
 
-  if tf.shape(waveform) > 16000:
-    waveform = waveform[:16000]
-  zero_padding = tf.zeros([16000] - tf.shape(waveform), dtype=tf.float32)  # fix this so the padding isn't huge
+      waveform = tf.cast(waveform, tf.float32)
+      equal_length = tf.concat([waveform, zero_padding], 0)
+      spectrogram = tf.signal.stft(
+        equal_length, frame_length=255, frame_step=128)
 
-  waveform = tf.cast(waveform, tf.float32)
-  equal_length = tf.concat([waveform, zero_padding], 0)
-  spectrogram = tf.signal.stft(
-    equal_length, frame_length=255, frame_step=128)
-
-  return spectrogram
+      return spectrogram
 
 
-def prep_data(note, tf):
+def prep_data(note: np.ndarray, tf):
+    """Turn a numpy buffer note into a tensorflow dataset"""
     waveform = get_waveform(note, tf)
     spec = get_spectrogram(waveform, tf)
     ds = tf.data.Dataset.from_tensors([spec])
@@ -49,6 +50,7 @@ def parse_result(prediction, tf):
 
 def identification_process(unidentified_notes: Queue, identified_notes: Queue,
                            ready_count: Value, finished: Value, ready: Value):
+    """Subprocess which will classify notes in unidentified_notes and place them in identified_notes"""
     import tensorflow as tfp
     print(f"Starting process {current_process().name}")
     model = tfp.keras.models.load_model("savedModel")
@@ -75,30 +77,67 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
     return True
 
 
+def note_split_process(buffer_excerpts: Queue, unidentified_notes: Queue, finished: Value):
+    """Subprocess which extracts notes from buffer_excerpts and places them in unidentified_notes"""
+    print("Starting note split process")
+    leftover_buf = np.ndarray([0])
+    while not finished.value == 1:
+        try:
+            buf_excerpt: np.ndarray = buffer_excerpts.get_nowait()
+        except queue.Empty:
+            pass
+        else:
+            print(buf_excerpt)
+            onsets = find_onsets(buf_excerpt, 22050)
+            first_onset = onsets[0]
+            first_note = np.concatenate([leftover_buf, buf_excerpt[:first_onset]])  #use the leftover from the last buffer
+            unidentified_notes.put(first_note)
+            for i, onset in enumerate(onsets[1:-2]):  #Don't do this for the first or last onset
+                start = onset
+                finish = onsets[i + 2]  # +2 because of the funny indexing
+                new_note = buf_excerpt[start:finish]
+                unidentified_notes.put(new_note)
+    return True
+
+
+
+
 def main():
-
-
     techniques = os.listdir("samples/manual")
     print(techniques)
     number_of_processes = 3
+    buffer_length = 2  # value in seconds
+    sr = 22050
 
+    buffer_excerpts = Queue()  # contains 2 second snippets of buffer that needs to be split into notes
     unidentified_notes = Queue()  # stores waveforms of prepared notes that must be identified
     identified_notes = Queue()  # stores arrays of ints indicating the most to least likely technique
-    ready_count = Value('i', 0) #  track how many processes are ready
+    ready_count = Value('i', 0)  # track how many processes are ready
     finished = Value('i', 0)  # track how many processes are finished
-    ready = Value('i', 0)
+    ready = Value('i', 0)  # signal to all subprocesses that we can start
 
     processes = []
 
-    sample_files = [f"samples/manual/chord/chord{i}.wav" for i in range(10, 196)]
+    sample_file = f"samples/sorted/chords#02.wav"
 
+    ###### Split the sample into 2 second chunks ######
+    print("Splitting huge audio file...")
+    sample_wav, _ = librosa.load(sample_file, sr)
+    total_buffers = (len(sample_wav) // sr) + 1
+    print(total_buffers)
+    for i in range(total_buffers):
+        buf_excerpt = sample_wav[i * sr * buffer_length: (i + 1) * sr * buffer_length]
+        buffer_excerpts.put(buf_excerpt)
 
-
+    ###### Start all the processes ######
     for w in range(number_of_processes):
         p = Process(target=identification_process,
                     args=(unidentified_notes, identified_notes, ready_count, finished, ready))
         processes.append(p)
         p.start()
+
+    note_split = Process(target=note_split_process, args=(buffer_excerpts, unidentified_notes, finished))
+    note_split.start()
 
     while ready_count.value != number_of_processes:
         pass
@@ -108,12 +147,9 @@ def main():
 
     identified_notes_count = 0
     ready_to_quit = False
-    for f in sample_files:
-        unidentified_notes.put(librosa.load(f)[0])
-        time.sleep(0.2)
 
     while True:
-        if identified_notes_count == len(sample_files):
+        if identified_notes_count == total_buffers:
             ready_to_quit = True
         if not identified_notes.empty():
 
