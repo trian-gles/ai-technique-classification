@@ -6,6 +6,7 @@ import queue
 import librosa
 from utilities import find_onsets
 from pyo import *
+import soundfile
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
 
@@ -53,7 +54,7 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
     #  Test to playback the notes sent to this
     import tensorflow as tfp
     print(f"Starting process {current_process().name}")
-    #model = tfp.keras.models.load_model("savedModel")
+    model = tfp.keras.models.load_model("savedModel")
     print(f"Model loaded for {current_process().name}")
     ready_count.value += 1
     while ready.value == 0:  # wait for all processes to be ready
@@ -66,13 +67,11 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
         except queue.Empty:
             pass
         else:
-
             ds = prep_data(note, tfp)
             for spectrogram in ds.batch(1):
                 print(current_process().name + f" executing identification")
                 spectrogram = tfp.squeeze(spectrogram, axis=1)
-                #prediction = model(spectrogram)
-                break
+                prediction = model(spectrogram)
                 parsed_pred = parse_result(prediction, tfp)
                 identified_notes.put(parsed_pred)
     return True
@@ -82,6 +81,7 @@ def note_split_process(buffer_excerpts: Queue, unidentified_notes: Queue, finish
     """Subprocess which extracts notes from buffer_excerpts and places them in unidentified_notes"""
     print("Starting note split process")
     leftover_buf = np.ndarray([0])
+
     while not finished.value == 1:
         try:
             buf_excerpt: np.ndarray = buffer_excerpts.get_nowait()
@@ -89,6 +89,7 @@ def note_split_process(buffer_excerpts: Queue, unidentified_notes: Queue, finish
             pass
         else:
             print("New buffer identified to split")
+            print(buf_excerpt.dtype)
             onsets = find_onsets(buf_excerpt, 22050)
             if len(onsets) == 0:
                 print("buffer contains no onsets")
@@ -108,8 +109,7 @@ def note_split_process(buffer_excerpts: Queue, unidentified_notes: Queue, finish
 
 
 def main():
-#    techniques = os.listdir("samples/manual")
-    techniques = ["idk", "fuck", "shit", "stuff", "things", "why", "something else"]
+    techniques = os.listdir("samples/manual")
     print(techniques)
     number_of_processes = 3
     buffer_length = 2  # value in seconds
@@ -127,15 +127,16 @@ def main():
 
     ###### Set up PYO #######
     s = Server()
+    s.setInputDevice(2)
     s.boot()
     t = NewTable(length=buffer_length)
-    inp = Input()
+    inp = Input(0)
     rec = TableRec(inp, table=t).play()
-    osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback
+    #osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback
 
     def send_buf_for_analysis():
         print("Sending out new buffer")
-        np_arr = np.frombuffer(t.getBuffer())
+        np_arr = np.array(t.getTable())
         buffer_excerpts.put(np_arr)
         rec.play()
 

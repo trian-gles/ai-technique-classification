@@ -7,6 +7,7 @@ from multiprocessing import Lock, Process, Queue, current_process, Value
 import queue
 import librosa
 from utilities import find_onsets
+import soundfile
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
@@ -88,7 +89,7 @@ def note_split_process(buffer_excerpts: Queue, unidentified_notes: Queue, finish
         except queue.Empty:
             pass
         else:
-            print(buf_excerpt)
+            print(buf_excerpt.dtype)
             onsets = find_onsets(buf_excerpt, 22050)
             first_onset = onsets[0]
             first_note = np.concatenate([leftover_buf, buf_excerpt[:first_onset]])  #use the leftover from the last buffer
@@ -119,7 +120,7 @@ def main():
 
     processes = []
 
-    sample_file = f"samples/sorted/chords#02.wav"
+    sample_file = f"samples/sorted/smacks#04.wav"
 
     ###### Split the sample into 2 second chunks ######
     print("Splitting huge audio file...")
