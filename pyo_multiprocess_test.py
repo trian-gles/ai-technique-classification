@@ -50,9 +50,10 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
                            ready_count: Value, finished: Value, ready: Value):
     """Subprocess which will classify notes in unidentified_notes and place them in identified_notes"""
     #  I should use time to make sure this ALWAYS lasts the same amount of time
+    #  Test to playback the notes sent to this
     import tensorflow as tfp
     print(f"Starting process {current_process().name}")
-    model = tfp.keras.models.load_model("savedModel")
+    #model = tfp.keras.models.load_model("savedModel")
     print(f"Model loaded for {current_process().name}")
     ready_count.value += 1
     while ready.value == 0:  # wait for all processes to be ready
@@ -70,7 +71,8 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
             for spectrogram in ds.batch(1):
                 print(current_process().name + f" executing identification")
                 spectrogram = tfp.squeeze(spectrogram, axis=1)
-                prediction = model(spectrogram)
+                #prediction = model(spectrogram)
+                break
                 parsed_pred = parse_result(prediction, tfp)
                 identified_notes.put(parsed_pred)
     return True
@@ -90,6 +92,7 @@ def note_split_process(buffer_excerpts: Queue, unidentified_notes: Queue, finish
             onsets = find_onsets(buf_excerpt, 22050)
             if len(onsets) == 0:
                 print("buffer contains no onsets")
+                leftover_buf = np.concatenate([leftover_buf, buf_excerpt])
                 continue
             first_onset = onsets[0]
             first_note = np.concatenate(
@@ -100,11 +103,13 @@ def note_split_process(buffer_excerpts: Queue, unidentified_notes: Queue, finish
                 finish = onsets[i + 2]  # +2 because of the funny indexing
                 new_note = buf_excerpt[start:finish]
                 unidentified_notes.put(new_note)
+            leftover_buf = buf_excerpt[onsets[-1]:]  # the new leftover buffer starts at the last onset
     return True
 
 
 def main():
-    techniques = os.listdir("samples/manual")
+#    techniques = os.listdir("samples/manual")
+    techniques = ["idk", "fuck", "shit", "stuff", "things", "why", "something else"]
     print(techniques)
     number_of_processes = 3
     buffer_length = 2  # value in seconds
@@ -122,11 +127,11 @@ def main():
 
     ###### Set up PYO #######
     s = Server()
-    s.setInputDevice(9)
     s.boot()
     t = NewTable(length=buffer_length)
     inp = Input()
     rec = TableRec(inp, table=t).play()
+    osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback
 
     def send_buf_for_analysis():
         print("Sending out new buffer")

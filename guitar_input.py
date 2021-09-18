@@ -3,6 +3,7 @@ import utilities
 import numpy as np
 import multiprocessing as mp
 import ctypes
+import time
 
 
 def main():
@@ -27,11 +28,13 @@ def main():
 
 
 def init_analysis_sub(tup): # because trigfunc only can send one arg, I use a tuple
+    cur_time = time.time()
     np_arr = np.frombuffer(tup[0].get_obj())
     np_arr[:] = np.array(tup[1].getBuffer())[:] # copy the buffer into the new np array.  at the moment, this will drop notes at the beginning and end of the buffer
     p = mp.Process(target=sub_process, args = (tup[0],))
     p.start()
     tup[2].play()
+    print(f"Time required for analysis = {time.time() - cur_time}")
 
 
 def sub_process(buf):
