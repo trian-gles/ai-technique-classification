@@ -4,7 +4,8 @@ import time
 from multiprocessing import Process, Queue, current_process, Value
 import queue
 import librosa
-from utilities import find_onsets, numpy_to_tfdata, prediction_to_int_ranks, TECHNIQUES, int_to_string_results
+from utilities import find_onsets, numpy_to_tfdata, prediction_to_int_ranks, \
+    TECHNIQUES, int_to_string_results, note_above_threshold
 from pyo import *
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
@@ -64,7 +65,11 @@ def note_split_process(buffer_excerpts: Queue, unidentified_notes: Queue, finish
                 start = onset
                 finish = onsets[i + 2]  # +2 because of the funny indexing
                 new_note = buf_excerpt[start:finish]
-                unidentified_notes.put(new_note)
+                try:
+                    if note_above_threshold(new_note):
+                        unidentified_notes.put(new_note)
+                except ValueError: ## not positive why this happens
+                    break
             leftover_buf = buf_excerpt[onsets[-1]:]  # the new leftover buffer starts at the last onset
     return True
 
