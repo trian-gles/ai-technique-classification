@@ -6,6 +6,7 @@ import tensorflow_io as tfio
 import seaborn as sns
 import simpleaudio
 import librosa
+from utilities import parse_result, int_to_string_results, plot_prediction
 
 import time
 
@@ -17,10 +18,19 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # use GPU instead of AVX
 dir_path = os.path.dirname(os.path.realpath(__file__))
 path = os.path.join(dir_path, "samples/manual")
 
-techniques = (tf.io.gfile.listdir(path))
+#techniques = (tf.io.gfile.listdir(path))
+techniques = ["IGNORE", "Slide", "Chord", "Harm", "Pont", "Tasto", "Smack"]
 
-test_file = "samples/manual/chord/chord10.wav"
-print(techniques)
+test_basefiles = os.listdir("test_sampls")
+test_files = [os.path.join("test_sampls", bf) for bf in test_basefiles]
+
+#print(techniques)
+
+def get_waveform(path: str):
+    bin = tf.io.read_file(path)
+    audio, _ = tf.audio.decode_wav(bin)  # somewhere here it breaks.......
+    tf.cast(audio, tf.float32)
+    return tf.squeeze(audio, axis=-1)
 
 
 def get_waveform_and_label(path: str):
@@ -44,6 +54,7 @@ def get_spectrogram(waveform: tf.Tensor):
         equal_length, frame_length=255, frame_step=128)
 
     spectrogram = tf.abs(spectrogram)
+    spectrogram = tf.expand_dims(spectrogram, -1)
 
     return spectrogram
 
@@ -60,31 +71,28 @@ def preprocess_dataset(files: list):
         get_spectrogram_and_label_id, num_parallel_calls=tf.data.AUTOTUNE)
     return output_ds
 
-def parse_result(prediction, tf):
-    sftmax = tf.nn.softmax(prediction[0])
-    sorted = np.sort(sftmax)[::-1]
-    index_of = lambda x: np.where(sftmax == x)[0][0]
-    prediction_ranks = list(map(index_of, sorted))
-    return prediction_ranks
-
-audio, _ =  librosa.load(test_file, 22050)
-tf.cast(audio, tf.float32)
+#audio, _ =  librosa.load(test_file, 22050)
+#tf.cast(audio, tf.float32)
 
 
-audio = tf.convert_to_tensor(audio)
-spec = get_spectrogram(audio)
+#audio = tf.convert_to_tensor(audio)
+#spec = get_spectrogram(audio)
+model = tf.keras.models.load_model("savedModel")
 
 
-sample_ds = tf.data.Dataset.from_tensors(spec)
-for spectrogram in sample_ds.batch(1):
-    model = tf.keras.models.load_model("savedModel")
-    start_tim = time.time()
-    prediction = model(spectrogram)
-    int_results = parse_result(prediction, tf)
-    str_results = list(map(lambda i: techniques[i], int_results))
-    print(str_results)
-    print(f"Time to predict = {time.time() - start_tim}")
+for test_file in test_files:
+    audio, _ =  librosa.load(test_file, 22050)
+    tf.cast(audio, tf.float32)
 
-    plt.bar(techniques, tf.nn.softmax(prediction[0]))
-    plt.title(f'Predictions for tasto')
-    plt.show()
+    audio = tf.convert_to_tensor(audio)
+    spec = get_spectrogram(audio)
+    #spec = get_spectrogram(get_waveform(test_file))
+    sample_ds = tf.data.Dataset.from_tensors(spec)
+    for spectrogram in sample_ds.batch(1):
+        start_tim = time.time()
+        prediction = model(spectrogram)
+        print(f"Time to predict = {time.time() - start_tim}")
+        plot_prediction(techniques, prediction, tf)
+
+
+

@@ -6,47 +6,11 @@ import time
 from multiprocessing import Lock, Process, Queue, current_process, Value
 import queue
 import librosa
-from utilities import find_onsets
-import soundfile
+from utilities import find_onsets, get_waveform_from_bin, get_spectrogram, \
+    TECHNIQUES, plot_prediction, get_waveform_from_ndarray, numpy_to_tfdata, prediction_to_int_ranks
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
-
-
-def get_waveform(audio, tf):
-    audio = tf.convert_to_tensor(audio)
-
-    tf.cast(audio, tf.float32)
-    return audio
-
-
-
-def get_spectrogram(waveform, tf):
-      if tf.shape(waveform) > 16000:
-        waveform = waveform[:16000]
-      zero_padding = tf.zeros([16000] - tf.shape(waveform), dtype=tf.float32)  # fix this so the padding isn't huge
-
-      waveform = tf.cast(waveform, tf.float32)
-      equal_length = tf.concat([waveform, zero_padding], 0)
-      spectrogram = tf.signal.stft(
-        equal_length, frame_length=255, frame_step=128)
-
-      return spectrogram
-
-
-def prep_data(note: np.ndarray, tf):
-    """Turn a numpy buffer note into a tensorflow dataset"""
-    waveform = get_waveform(note, tf)
-    spec = get_spectrogram(waveform, tf)
-    ds = tf.data.Dataset.from_tensors([spec])
-    return ds
-
-def parse_result(prediction, tf):
-    sftmax = tf.nn.softmax(prediction[0])
-    sorted = np.sort(sftmax)[::-1]
-    index_of = lambda x: np.where(sftmax == x)[0][0]
-    prediction_ranks = list(map(index_of, sorted))
-    return prediction_ranks
 
 
 def identification_process(unidentified_notes: Queue, identified_notes: Queue,
@@ -68,14 +32,14 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
         except queue.Empty:
             pass
         else:
-
-            ds = prep_data(note, tfp)
+            print(note)
+            ds: tfp.data.Dataset = numpy_to_tfdata(note, tfp)
             for spectrogram in ds.batch(1):
                 print(current_process().name + f" executing identification")
                 spectrogram = tfp.squeeze(spectrogram, axis=1)
                 prediction = model(spectrogram)
-                parsed_pred = parse_result(prediction, tfp)
-                identified_notes.put(parsed_pred)
+                parsed_pred = prediction_to_int_ranks(prediction, tfp)
+                identified_notes.put(prediction)
     return True
 
 
@@ -89,7 +53,7 @@ def note_split_process(buffer_excerpts: Queue, unidentified_notes: Queue, finish
         except queue.Empty:
             pass
         else:
-            print(buf_excerpt.dtype)
+            print(buf_excerpt)
             onsets = find_onsets(buf_excerpt, 22050)
             first_onset = onsets[0]
             first_note = np.concatenate([leftover_buf, buf_excerpt[:first_onset]])  #use the leftover from the last buffer
@@ -105,7 +69,7 @@ def note_split_process(buffer_excerpts: Queue, unidentified_notes: Queue, finish
 
 
 def main():
-    techniques = os.listdir("samples/manual")
+    techniques = TECHNIQUES
     print(techniques)
     number_of_processes = 3
     buffer_length = 2  # value in seconds
@@ -120,16 +84,22 @@ def main():
 
     processes = []
 
-    sample_file = f"samples/sorted/smacks#04.wav"
 
     ###### Split the sample into 2 second chunks ######
-    print("Splitting huge audio file...")
-    sample_wav, _ = librosa.load(sample_file, sr)
-    total_buffers = (len(sample_wav) // sr) + 1
-    print(total_buffers)
-    for i in range(total_buffers):
-        buf_excerpt = sample_wav[i * sr * buffer_length: (i + 1) * sr * buffer_length]
-        buffer_excerpts.put(buf_excerpt)
+    # print("Splitting huge audio file...")
+    # sample_wav, _ = librosa.load(sample_file, sr)
+    # total_buffers = (len(sample_wav) // sr) + 1
+    # print(total_buffers)
+    # for i in range(total_buffers):
+    #     buf_excerpt = sample_wav[i * sr * buffer_length: (i + 1) * sr * buffer_length]
+    #     buffer_excerpts.put(buf_excerpt)
+
+    test_basefiles = os.listdir("test_sampls")
+    test_files = [os.path.join("test_sampls", bf) for bf in test_basefiles]
+    total_notes = len(test_files)
+    for f in test_files:
+        sample_wav, _ = librosa.load(f, sr)
+        buffer_excerpts.put(sample_wav)
 
     ###### Start all the processes ######
     for w in range(number_of_processes):
@@ -151,20 +121,24 @@ def main():
 
     identified_notes_count = 0
     ready_to_quit = False
+    results = []
 
     while True:
-        if identified_notes_count == total_buffers:
+        if identified_notes_count == total_notes:
             ready_to_quit = True
         if not identified_notes.empty():
-
-            str_results = list(map(lambda i: techniques[i], identified_notes.get()))
-            str_results = str_results[0:-1]
-            str_results.reverse()
-            print(f"New identified note in main process: {str_results}")
+            results.append(identified_notes.get())
+            # str_results = list(map(lambda i: techniques[i], int_results))
+            # str_results = str_results[0:-1]
+            # str_results.reverse()
+            print(f"New identified note in main process")
             identified_notes_count += 1
         if ready_to_quit:
             finished.value = 1
             break
+    import tensorflow as tf
+    for pred in results:
+        plot_prediction(TECHNIQUES, pred, tf)
 
     print(f"Total time : {time.time() - cur_time}, notes identified = {identified_notes_count}")
 
