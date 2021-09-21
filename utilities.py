@@ -69,6 +69,13 @@ def prediction_to_int_ranks(prediction, tf):
 
 
 def plot_prediction(techniques, prediction, tf):
+    """view a matplotlib graph of the prediction"""
     plt.bar(techniques, tf.nn.softmax(prediction[0]))
     plt.title(f'Predictions for new note:')
     plt.show()
+
+
+def note_above_threshold(note: np.ndarray):
+    """Checks if the peak of a note is above a set threshold"""
+    return np.max(np.abs(note)) > 0.09
+
