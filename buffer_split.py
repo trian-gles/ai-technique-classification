@@ -39,12 +39,18 @@ class SplitNoteParser:
             buf_pieces = np.split(new_buf, note_ons)
             self._add_to_lb(buf_pieces[0]) # add the first piece to the leftover
 
-            for slice in buf_pieces[1:]:
-                if len(slice) == 0:
+            for note in buf_pieces[1:]:
+                if len(note) == 0: # Sometimes librosa spits out simultaneous onsets
                     continue
-                if note_above_threshold(slice):
+                if self._check_note_quality(note):
                     self._send_lb()
-                self._add_to_lb(slice)
+                self._add_to_lb(note)
+
+    def _check_note_quality(self, note: np.ndarray):
+        """Checks if the note is loud enough and the buffer is long enough"""
+        thresh = note_above_threshold(note)
+        long_enough = len(self.leftover_buf) > 2048
+        return thresh and long_enough
 
     def _add_to_lb(self, not_note: np.ndarray):
         try:
