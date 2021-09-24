@@ -3,7 +3,7 @@ import librosa
 from typing import List
 import matplotlib.pyplot as plt
 
-TECHNIQUES = ["IGNORE", "Slide", "Chord", "Harm", "Pont", "Tasto", "Smack"]
+TECHNIQUES = ["IGNORE", "Slide", "Tasto", "Harm", "Pont", "Chord", "Smack"]
 
 
 def find_onsets(y: np.ndarray, sr: int) -> np.ndarray:
@@ -75,7 +75,10 @@ def plot_prediction(techniques, prediction, tf):
     plt.show()
 
 
-def note_above_threshold(note: np.ndarray):
+def note_above_threshold(note: np.ndarray) -> bool:
     """Checks if the peak of a note is above a set threshold"""
-    return np.max(np.abs(note)) > 0.09
+    if np.max(np.abs(note)) > 0.09:
+        return True
+    else:
+        return False
 
