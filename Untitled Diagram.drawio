@@ -1,0 +1,100 @@
+<mxfile host="app.diagrams.net" modified="2021-09-23T14:25:37.736Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36" etag="fOZ15F0snyNRj6bvPJMV" version="15.2.9" type="github">
+  <diagram id="BDGeRAOKJIfFWt-nfXFW" name="Page-1">
+    <mxGraphModel dx="870" dy="626" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="klXC1tTgGsR_19Xfir9O-11" value="&lt;span style=&quot;color: rgba(0 , 0 , 0 , 0) ; font-family: monospace ; font-size: 0px&quot;&gt;%3CmxGraphModel%3E%3Croot%3E%3CmxCell%20id%3D%220%22%2F%3E%3CmxCell%20id%3D%221%22%20parent%3D%220%22%2F%3E%3CmxCell%20id%3D%222%22%20value%3D%22List%26lt%3Benum%20classes%26gt%3B%20classification%22%20style%3D%22text%3BstrokeColor%3Dnone%3BfillColor%3Dnone%3Balign%3Dleft%3BverticalAlign%3Dtop%3BspacingLeft%3D4%3BspacingRight%3D4%3Boverflow%3Dhidden%3Brotatable%3D0%3Bpoints%3D%5B%5B0%2C0.5%5D%2C%5B1%2C0.5%5D%5D%3BportConstraint%3Deastwest%3B%22%20vertex%3D%221%22%20parent%3D%221%22%3E%3CmxGeometry%20x%3D%22130%22%20y%3D%22106%22%20width%3D%22470%22%20height%3D%2226%22%20as%3D%22geometry%22%2F%3E%3C%2FmxCell%3E%3C%2Froot%3E%3C%2FmxGraphModel%3E&lt;/span&gt;" style="shape=internalStorage;whiteSpace=wrap;html=1;backgroundOutline=1;dx=190;dy=30;" vertex="1" parent="1">
+          <mxGeometry x="100" y="50" width="630" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-13" value="&lt;span style=&quot;text-align: left&quot;&gt;List&amp;lt;float&amp;gt; waveform&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="120" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-14" value="Properties of a note message" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="50" width="190" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-15" value="&lt;span style=&quot;text-align: left&quot;&gt;List&amp;lt;enum classes&amp;gt; classification&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="80" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-16" value="&lt;span style=&quot;text-align: left&quot;&gt;int length&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="160" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-17" value="&lt;span style=&quot;text-align: left&quot;&gt;List&amp;lt;List&amp;lt;float&amp;gt;&amp;gt; spectrogram&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="250" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-18" value="Descending most likely classifications, currently without weights" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="290" y="80" width="440" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-19" value="Self explanatory" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="290" y="120" width="440" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-20" value="Self explanatory" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="290" y="160" width="440" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-21" value="Self explanatory" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="290" y="250" width="440" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;fillColor=#ffe6cc;strokeColor=#d79b00;" edge="1" parent="1" source="klXC1tTgGsR_19Xfir9O-22" target="klXC1tTgGsR_19Xfir9O-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-22" value="length" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="435" y="340" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" edge="1" parent="1" source="klXC1tTgGsR_19Xfir9O-23" target="klXC1tTgGsR_19Xfir9O-33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-23" value="spectrogram" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="700" y="340" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-24" value="long notes, quiet notes, and silence increase chance for a computer solo drawing from loud notes&lt;br&gt;&lt;br&gt;The opposite decreases this" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fixedSize=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="530" width="170" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-25" value="&lt;span style=&quot;text-align: left&quot;&gt;float relativeAmplitude&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="110" y="210" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-26" value="Max amplitude relative to the distribution of training notes for that particular technique" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="300" y="210" width="440" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.375;entryY=0;entryDx=0;entryDy=0;fillColor=#e1d5e7;strokeColor=#9673a6;" edge="1" parent="1" source="klXC1tTgGsR_19Xfir9O-27" target="klXC1tTgGsR_19Xfir9O-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-27" value="silence length" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="30" y="340" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-36" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fillColor=#fff2cc;strokeColor=#d6b656;" edge="1" parent="1" source="klXC1tTgGsR_19Xfir9O-28" target="klXC1tTgGsR_19Xfir9O-33">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520" y="495" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-28" value="classification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="340" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-37" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;fillColor=#f8cecc;strokeColor=#b85450;" edge="1" parent="1" source="klXC1tTgGsR_19Xfir9O-32" target="klXC1tTgGsR_19Xfir9O-33">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="460" />
+              <mxPoint x="482" y="460" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-32" value="waveform" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="160" y="340" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-33" value="Techniques store waveforms, others reduced spectrogram information" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="440" y="590" width="170" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.625;entryY=0;entryDx=0;entryDy=0;fillColor=#d5e8d4;strokeColor=#82b366;" edge="1" parent="1" source="klXC1tTgGsR_19Xfir9O-34" target="klXC1tTgGsR_19Xfir9O-24">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="630" y="480" />
+              <mxPoint x="176" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="klXC1tTgGsR_19Xfir9O-34" value="relativeAmplitude" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="570" y="340" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
