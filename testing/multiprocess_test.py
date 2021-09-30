@@ -94,8 +94,8 @@ def main():
     #     buf_excerpt = sample_wav[i * sr * buffer_length: (i + 1) * sr * buffer_length]
     #     buffer_excerpts.put(buf_excerpt)
 
-    test_basefiles = os.listdir("test_sampls")
-    test_files = [os.path.join("test_sampls", bf) for bf in test_basefiles]
+    test_basefiles = os.listdir("../test_sampls")
+    test_files = [os.path.join("../test_sampls", bf) for bf in test_basefiles]
     total_notes = len(test_files)
     for f in test_files:
         sample_wav, _ = librosa.load(f, sr)

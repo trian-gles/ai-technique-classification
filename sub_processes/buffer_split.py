@@ -8,7 +8,9 @@ from pyo import *
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
 
-
+####
+# NEEDS TO LIMIT BUFFERS TO 16000 SAMPLES, OTHERWISE SEND "SILENCE"
+####
 class SplitNoteParser:
     def __init__(self, buffer_excerpts: Queue, unidentified_notes: Queue, finished: Value):
         self.leftover_buf = np.ndarray([])
@@ -134,7 +136,7 @@ def main():
             break
 
 
-    soundfile.write("test_unclassified_notes/full_recording.wav", debug_record_file, sr)
+    soundfile.write("../test_unclassified_notes/full_recording.wav", debug_record_file, sr)
 
 
 if __name__ == "__main__":

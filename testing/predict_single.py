@@ -21,8 +21,8 @@ path = os.path.join(dir_path, "samples/manual")
 #techniques = (tf.io.gfile.listdir(path))
 techniques = ["IGNORE", "Slide", "Chord", "Harm", "Pont", "Tasto", "Smack"]
 
-test_basefiles = os.listdir("test_sampls")
-test_files = [os.path.join("test_sampls", bf) for bf in test_basefiles]
+test_basefiles = os.listdir("../test_sampls")
+test_files = [os.path.join("../test_sampls", bf) for bf in test_basefiles]
 
 #print(techniques)
 

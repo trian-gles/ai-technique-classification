@@ -1,48 +1,14 @@
-import os
 import numpy as np
-import time
 from multiprocessing import Process, Queue, current_process, Value
 import queue
-import librosa
-from utilities import find_onsets, numpy_to_tfdata, prediction_to_int_ranks, \
-    TECHNIQUES, int_to_string_results, note_above_threshold
+from utilities import numpy_to_tfdata, prediction_to_int_ranks, \
+    TECHNIQUES, int_to_string_results
 
-from buffer_split import SplitNoteParser
+from sub_processes.buffer_split import SplitNoteParser
+from sub_processes.identify_note import identification_process
 from pyo import *
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
-
-
-def identification_process(unidentified_notes: Queue, identified_notes: Queue,
-                           ready_count: Value, finished: Value, ready: Value):
-    """Subprocess which will classify notes in unidentified_notes and place them in identified_notes"""
-    #  I should use time to make sure this ALWAYS lasts the same amount of time
-    #  Test to playback the notes sent to this
-    import tensorflow as tfp
-    print(f"Starting process {current_process().name}")
-    model = tfp.keras.models.load_model("savedModel")
-    print(f"Model loaded for {current_process().name}")
-    ready_count.value += 1
-    while ready.value == 0:  # wait for all processes to be ready
-        pass
-    while True:
-        if finished.value == 1:  # the main process says it's time to quit
-            break
-        try:
-            note = unidentified_notes.get_nowait()
-        except queue.Empty:
-            continue
-        else:
-            #print(current_process().name + f" executing identification")
-            #print(note)
-            ds = numpy_to_tfdata(note, tfp)
-            for spectrogram in ds.batch(1):
-
-                spectrogram = tfp.squeeze(spectrogram, axis=1)
-                prediction = model(spectrogram)
-                parsed_pred = prediction_to_int_ranks(prediction, tfp)
-                identified_notes.put(parsed_pred)
-    return True
 
 
 def main():
@@ -63,7 +29,7 @@ def main():
     ###### Create objects for individual processes ######
     parser = SplitNoteParser(buffer_excerpts, unidentified_notes, finished)
 
-    ###### Set up PYO #######
+    ###### Set up PYO #######  THIS SHOULD GET IT'S OWN FILE AND FUNCTION
     s = Server(sr=sr)
     s.boot()
     t = NewTable(length=buffer_length)
