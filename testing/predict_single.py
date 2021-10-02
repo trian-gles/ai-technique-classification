@@ -1,18 +1,9 @@
 import tensorflow as tf
 import os
-import numpy as np
-import matplotlib.pyplot as plt
-import tensorflow_io as tfio
-import seaborn as sns
-import simpleaudio
 import librosa
-from utilities import parse_result, int_to_string_results, plot_prediction
+from utilities.utilities import plot_prediction
 
 import time
-
-from tensorflow.keras.layers.experimental import preprocessing
-from tensorflow.keras import layers
-from tensorflow.keras import models
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # use GPU instead of AVX
 dir_path = os.path.dirname(os.path.realpath(__file__))

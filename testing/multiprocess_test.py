@@ -1,13 +1,11 @@
 
 import os
-import matplotlib.pyplot as plt
 import numpy as np
 import time
-from multiprocessing import Lock, Process, Queue, current_process, Value
+from multiprocessing import Process, Queue, current_process, Value
 import queue
 import librosa
-from utilities import find_onsets, get_waveform_from_bin, get_spectrogram, \
-    TECHNIQUES, plot_prediction, get_waveform_from_ndarray, numpy_to_tfdata, prediction_to_int_ranks
+from utilities.utilities import find_onsets, TECHNIQUES, plot_prediction, numpy_to_tfdata, prediction_to_int_ranks
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX

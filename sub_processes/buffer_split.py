@@ -1,8 +1,7 @@
 import numpy as np
-from multiprocessing import Process, Queue, current_process, Value
+from multiprocessing import Process, Queue, Value
 import queue
-from utilities import find_onsets, note_above_threshold
-from typing import List
+from utilities.utilities import find_onsets, note_above_threshold
 import soundfile
 from pyo import *
 

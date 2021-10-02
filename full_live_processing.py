@@ -1,8 +1,6 @@
 import numpy as np
-from multiprocessing import Process, Queue, current_process, Value
-import queue
-from utilities import numpy_to_tfdata, prediction_to_int_ranks, \
-    TECHNIQUES, int_to_string_results
+from multiprocessing import Process, Queue, Value
+from utilities.utilities import TECHNIQUES, int_to_string_results
 
 from sub_processes.buffer_split import SplitNoteParser
 from sub_processes.identify_note import identification_process

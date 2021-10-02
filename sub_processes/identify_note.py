@@ -1,5 +1,5 @@
 from multiprocessing import Queue, Value, current_process
-from utilities import numpy_to_tfdata, prediction_to_int_ranks
+from utilities.utilities import numpy_to_tfdata, prediction_to_int_ranks
 import queue
 import numpy as np
 
