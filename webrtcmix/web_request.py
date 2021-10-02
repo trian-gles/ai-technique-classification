@@ -1,6 +1,7 @@
 import requests
 import io
-from requests.exceptions import HTTPError
+import sounddevice
+import numpy as np
 
 url = 'https://timeout2-ovo53lgliq-uc.a.run.app'
 # method : 'POST'
@@ -34,11 +35,16 @@ GRANSYNTH(st, dur, amp*7000, wave, granenv, hoptime, hopjitter,
    mindur, maxdur, minamp, maxamp, pitch + webpitch*0.01, transpcoll, pitchjitter, 21, 1, 1)
 """
 
-score_file = io.StringIO(score_str)
+def webrtc_request(score_str: str) -> np.ndarray:
+    files = {"file": ('text/plain', score_str.encode('utf-8'), "file.sco"), 'pitch': (None, 48)}
+    request = requests.post(url=url, files=files)
+    nparr = np.frombuffer(request.content, dtype=int)
+    return nparr
 
+def play_np(nparr: np.ndarray):
+    sounddevice.play(nparr)
+    while True:
+        pass
 
-files = {"upload_file": ("file.sco", score_file, 'text/plain')}
-
-request = requests.post(url=url, files=files)
-print(request.text)
-print(requests.Request("POST", url=url, files=files).prepare().body.decode('ascii'))
+if __name__ == "__main__":
+    play_np(webrtc_request(score_str))
