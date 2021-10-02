@@ -2,6 +2,8 @@ import requests
 import io
 import sounddevice
 import numpy as np
+import soundfile as sf
+import scipy.io.wavfile
 
 url = 'https://timeout2-ovo53lgliq-uc.a.run.app'
 # method : 'POST'
@@ -38,7 +40,8 @@ GRANSYNTH(st, dur, amp*7000, wave, granenv, hoptime, hopjitter,
 def webrtc_request(score_str: str) -> np.ndarray:
     files = {"file": ('text/plain', score_str.encode('utf-8'), "file.sco"), 'pitch': (None, 48)}
     request = requests.post(url=url, files=files)
-    nparr = np.frombuffer(request.content, dtype=int)
+    bytesio = io.BytesIO(request.content) #
+    nparr, _ = sf.read(bytesio, dtype='int32')
     return nparr
 
 def play_np(nparr: np.ndarray):
