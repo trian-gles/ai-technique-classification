@@ -1,7 +1,7 @@
 from random import randrange
+import webrtcmix.web_request as wr
 
 def guitar_partials_score(f1: float, f2: float, f3: float):
-
     return f"""
 load("STRUM2")
 total_dur = 10
@@ -42,3 +42,7 @@ for (i = 0; i < len(freqs) - 1; i += 1)
     rand_pat(inter_pitch, total_dur, 3, 9)
 }}
 """
+
+if __name__ == "__main__":
+    nparr = wr.webrtc_request(guitar_partials_score(230, 470, 3460))
+    wr.play_np(nparr)
