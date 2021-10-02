@@ -43,8 +43,7 @@ def webrtc_request(score_str: str) -> np.ndarray:
 
 def play_np(nparr: np.ndarray):
     sounddevice.play(nparr)
-    while True:
-        pass
+    sounddevice.wait()
 
 if __name__ == "__main__":
     play_np(webrtc_request(score_str))
