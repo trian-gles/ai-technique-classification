@@ -72,7 +72,8 @@ def main():
 
     while True:
         if not identified_notes.empty():
-            str_results = int_to_string_results(identified_notes.get(), TECHNIQUES)
+            result_dict = identified_notes.get()
+            str_results = int_to_string_results(result_dict["prediction"], TECHNIQUES)
             print(f"Identified note: {str_results[:3]}")
             identified_notes_count += 1
         if ready_to_quit:

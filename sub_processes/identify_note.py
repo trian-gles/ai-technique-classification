@@ -31,5 +31,11 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
                 spectrogram = tfp.squeeze(spectrogram, axis=1)
                 prediction = model(spectrogram)
                 parsed_pred = prediction_to_int_ranks(prediction, tfp)
-                identified_notes.put(parsed_pred)
+                result_dict = {}
+                result_dict["prediction"] = parsed_pred
+                result_dict["length"] = len(note)
+                result_dict["amp"] = max(np.abs(note))
+                result_dict["waveform"] = note
+                result_dict["spectrogram"] = spectrogram.numpy()
+                identified_notes.put(result_dict)
     return True
