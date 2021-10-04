@@ -1,6 +1,6 @@
 from typing import Union
 import numpy as np
-from utilities.utilities import TECHNIQUES, int_to_string_results, high_partials
+from utilities.analysis import TECHNIQUES, int_to_string_results, high_partials
 from webrtcmix import generate_rtcscore, web_request
 
 

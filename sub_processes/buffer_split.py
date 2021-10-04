@@ -1,7 +1,7 @@
 import numpy as np
 from multiprocessing import Process, Queue, Value
 import queue
-from utilities.utilities import find_onsets, note_above_threshold
+from utilities.analysis import find_onsets, note_above_threshold
 import soundfile
 import os
 

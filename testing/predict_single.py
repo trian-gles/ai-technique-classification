@@ -1,7 +1,7 @@
 import tensorflow as tf
 import os
 import librosa
-from utilities.utilities import plot_prediction
+from utilities.analysis import plot_prediction
 
 import time
 
