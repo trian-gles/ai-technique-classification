@@ -1,7 +1,6 @@
 import numpy as np
 from multiprocessing import Process, Queue, Value
-from utilities.utilities import TECHNIQUES, int_to_string_results
-
+from sub_processes.brain import Brain
 from sub_processes.buffer_split import SplitNoteParser
 from sub_processes.identify_note import identification_process
 from pyo import *
@@ -12,7 +11,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
 def main():
     number_of_processes = 1
     buffer_length = 2  # value in seconds
-    sr = 22050
+    sr = 22050 # MAKE THIS
 
 
     ###### Set up shared information ######
@@ -26,6 +25,7 @@ def main():
 
     ###### Create objects for individual processes ######
     parser = SplitNoteParser(buffer_excerpts, unidentified_notes, finished)
+    brain = Brain()
 
     ###### Set up PYO #######  THIS SHOULD GET IT'S OWN FILE AND FUNCTION
     s = Server(sr=sr)
@@ -72,9 +72,8 @@ def main():
 
     while True:
         if not identified_notes.empty():
-            result_dict = identified_notes.get()
-            str_results = int_to_string_results(result_dict["prediction"], TECHNIQUES)
-            print(f"Identified note: {str_results[:3]}")
+            note_dict = identified_notes.get()
+            brain.new_note(note_dict)
             identified_notes_count += 1
         if ready_to_quit:
             finished.value = 1
