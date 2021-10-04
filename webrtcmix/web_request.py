@@ -41,7 +41,8 @@ def webrtc_request(score_str: str) -> np.ndarray:
     files = {"file": ('text/plain', score_str.encode('utf-8'), "file.sco"), 'pitch': (None, 48)}
     request = requests.post(url=url, files=files)
     bytesio = io.BytesIO(request.content) #
-    nparr, _ = sf.read(bytesio, dtype='int32')
+    nparr, sr = sf.read(bytesio, dtype='int32')
+    print(sr)
     return nparr
 
 def play_np(nparr: np.ndarray):
