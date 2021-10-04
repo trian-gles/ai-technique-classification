@@ -1,6 +1,7 @@
 from typing import Union
 import numpy as np
-from utilities.utilities import TECHNIQUES, int_to_string_results
+from utilities.utilities import TECHNIQUES, int_to_string_results, high_partials
+from webrtcmix import generate_rtcscore, web_request
 
 
 class Note:
@@ -11,6 +12,9 @@ class Note:
         self.prediction: str = str_results[0]
         self.waveform: np.ndarray = note_dict["waveform"]
         self.amp: int = note_dict["amp"]
+
+    def get_high_partials(self):
+        return high_partials(self.waveform, 3)
 
 
 class Silence(Note):
@@ -63,12 +67,16 @@ class Brain:
         self.total_notes = 0
 
     def new_note(self, note_dict: dict):
-        """TODO: silences should be combined"""
         new_note = dict_to_note(note_dict)
 
         if new_note.prediction == "SILENCE" and self.total_notes > 0:
-            if self.prior_notes.peek().prediction == "Pont":
-                print("Pont into Silence")
+            prior_note: Note = self.prior_notes.peek()
+            if prior_note.prediction == "Pont":
+                high_ps = prior_note.get_high_partials()
+                print(high_ps)
+                sco = generate_rtcscore.guitar_partials_score(*high_ps)
+                wav = web_request.webrtc_request(sco)
+                web_request.play_np(wav)
 
         self.prior_notes.add(new_note)
         self.total_notes += 1
