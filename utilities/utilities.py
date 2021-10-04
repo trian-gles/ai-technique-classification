@@ -2,8 +2,9 @@ import numpy as np
 import librosa
 from typing import List
 import matplotlib.pyplot as plt
+from scipy.fft import rfft, rfftfreq
 
-TECHNIQUES = ["IGNORE", "Slide", "Tasto", "Harm", "Pont", "Chord", "Smack"]
+TECHNIQUES = ["IGNORE", "Slide", "Tasto", "Harm", "Pont", "Chord", "Smack", "SILENCE"]
 
 
 def find_onsets(y: np.ndarray, sr: int) -> np.ndarray:
@@ -81,4 +82,19 @@ def note_above_threshold(note: np.ndarray) -> bool:
         return True
     else:
         return False
+
+def high_partials(waveform: np.ndarray, n: int) -> List[float]:
+    """Returns n highest partials of a waveform"""
+    normalized_wf = np.int16((waveform / waveform.max()) * 32767)
+    yf = rfft(normalized_wf)
+    sorted_freqs = np.argsort(yf)
+    filt_freqs = sorted_freqs[sorted_freqs < 20000]
+    bins = np.arange(0, 20000, 10)
+    ind = np.digitize(filt_freqs, bins=bins)
+    uniqs = []
+    for freq in np.flip(ind):
+        if freq not in uniqs:
+            uniqs.append(freq)
+    return uniqs[:n]
+
 
