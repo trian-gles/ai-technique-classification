@@ -50,7 +50,10 @@ class SplitNoteParser:
     def _check_note_quality(self, note: np.ndarray):
         """Checks if the note is loud enough and the buffer is long enough"""
         thresh = note_above_threshold(note)
-        long_enough = len(self.leftover_buf) > 2048
+        try:
+            long_enough = len(self.leftover_buf) > 2048
+        except TypeError:
+            long_enough = False
         return thresh and long_enough
 
     def _add_to_lb(self, not_note: np.ndarray):
@@ -58,12 +61,19 @@ class SplitNoteParser:
             self.leftover_buf = np.concatenate([self.leftover_buf, not_note])
         except ValueError:
             self._set_lb(not_note)
+        self._check_length()
 
     def _set_lb(self, not_note: np.ndarray):
         self.leftover_buf = not_note
 
     def _empty_lb(self):
         self.leftover_buf = np.ndarray([])
+
+    def _check_length(self):
+        """If the current buffer is too long, just send it"""
+        if len(self.leftover_buf) > 16000:
+            #print("Leftover buf exceeded maximum")
+            self._send_lb()
 
     def _send_lb(self):
         self.unidentified_notes.put(self.leftover_buf)
