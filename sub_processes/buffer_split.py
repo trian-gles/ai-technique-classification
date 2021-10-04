@@ -3,7 +3,7 @@ from multiprocessing import Process, Queue, Value
 import queue
 from utilities.utilities import find_onsets, note_above_threshold
 import soundfile
-from pyo import *
+import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
 
@@ -82,6 +82,8 @@ class SplitNoteParser:
 
 
 def main():
+    from pyo import Server, NewTable, Input, TableRec, TrigFunc
+    import time
     buffer_length = 2  # value in seconds
     sr = 22050
 
