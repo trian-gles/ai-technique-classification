@@ -44,6 +44,18 @@ for (i = 0; i < len(freqs) - 1; i += 1)
 }}
 """
 
+def funny_scale_score(f1: float):
+    return f"""
+load("STRUM2")
+total_dur = 2
+
+
+for (i = 0; i < 25; i = i + 1)
+{{
+    STRUM2(i / 10, total_dur, 20000, {f1} + i * 10, 5, total_dur / 2, 0.5);
+}}
+"""
+
 if __name__ == "__main__":
     nparr = wr.webrtc_request(guitar_partials_score(230, 470, 3460))
     wr.play_np(nparr)
