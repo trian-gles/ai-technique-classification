@@ -35,7 +35,7 @@ def main():
     t = NewTable(length=buffer_length)
     inp = Input()
     rec = TableRec(inp, table=t).play()
-    playback_tab = DataTable(size = sr * 80)
+    playback_tab = DataTable(size = sr * 80, chnls=2)
     playback_reader = Osc(table=playback_tab, freq=playback_tab.getRate())
 
     osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback

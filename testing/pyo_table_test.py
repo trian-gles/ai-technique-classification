@@ -4,7 +4,7 @@ from webrtcmix.web_request import webrtc_request, score_str
 sr = 44100
 s = Server(sr=sr).boot()
 
-playback = DataTable(size = sr * 80)
+playback = DataTable(size = sr * 80, chnls=2)
 wav = webrtc_request(score_str)
 print("filling table")
 fill_tab_np(wav, playback)

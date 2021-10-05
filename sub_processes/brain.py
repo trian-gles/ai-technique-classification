@@ -2,6 +2,8 @@ from typing import Union
 import numpy as np
 from utilities.analysis import TECHNIQUES, int_to_string_results, get_partials
 from webrtcmix import generate_rtcscore, web_request
+import librosa
+from typing import List
 
 
 class Note:
@@ -9,12 +11,10 @@ class Note:
     def __init__(self, note_dict: dict):
         str_results = int_to_string_results(note_dict["prediction"], TECHNIQUES)
         print(f"New note: {str_results[0:3]}")
+
         self.prediction: str = str_results[0]
         self.waveform: np.ndarray = note_dict["waveform"]
         self.amp: int = note_dict["amp"]
-
-    def get_high_partials(self):
-        return get_partials(self.waveform, 22050)[2:5]
 
 
 class Silence(Note):
@@ -26,6 +26,34 @@ class NotSilence(Note):
     def __init__(self, note_dict: dict):
         super().__init__(note_dict)
         self.spectrogram = note_dict["spectrogram"]
+
+
+    def get_pitch_or_lowest(self):
+        if self.prediction == "Chord":
+            return self.get_lowest_partial()
+        else:
+            return self.get_fundamental()
+
+
+    def get_fundamental(self):
+        freqs, _, _ = librosa.pyin(self.waveform, 80, 1279) # 80 is the lowest note on the guitar
+        freqs = np.array(list(filter(lambda freq: not np.isnan(freq), freqs))) # get rid of nan
+        return np.average(freqs)
+
+    def get_lowest_partial(self) -> float:
+        """for chords"""
+        all_partials = get_partials(self.waveform, 22050)
+        return min(all_partials)
+
+
+    def get_high_partials(self) -> List[float]:
+        fund = self.get_fundamental()
+        all_partials = get_partials(self.waveform, 22050)
+        high_partials = list(filter(lambda freq: freq > fund * 2, all_partials))
+        while len(high_partials) < 3: # make sure there are at least 3 partials
+            first_part = high_partials[0]
+            high_partials.append(first_part)
+        return high_partials[:3]
 
 
 def dict_to_note(note_dict: dict) -> Note:
@@ -77,6 +105,14 @@ class Brain:
                 sco = generate_rtcscore.guitar_partials_score(*high_ps)
                 wav = web_request.webrtc_request(sco)
                 self.response = wav
+
+        if new_note.prediction == "Chord":
+            if new_note.amp > 0.2:
+                fund = new_note.get_fundamental()
+                if fund < 130:
+                    sco = generate_rtcscore.funny_scale_score(fund)
+                    self.response = web_request.webrtc_request(sco)
+
 
         self.prior_notes.add(new_note)
         self.total_notes += 1
