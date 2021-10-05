@@ -95,6 +95,7 @@ def get_partials(waveform: np.ndarray, sr: int) -> List[float]:
     peaks_amps = np.array(list(map(lambda p: [p, peak_sig[p]], peaks)))
     sorted_peaks = peaks_amps[peaks_amps[:, 1].argsort()][::-1]
     sorted_freqs = list(map(lambda i: xf[int(i)], sorted_peaks[:, 0]))
-    return sorted_freqs
+    sorted_freqs = filter(lambda freq: freq > 80, sorted_freqs)
+    return list(sorted_freqs)
 
 
