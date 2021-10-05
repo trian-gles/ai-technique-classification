@@ -2,6 +2,7 @@ import numpy as np
 import librosa
 from typing import List
 import matplotlib.pyplot as plt
+from scipy import signal
 from scipy.fft import rfft, rfftfreq
 
 TECHNIQUES = ["IGNORE", "Slide", "Tasto", "Harm", "Pont", "Chord", "Smack", "SILENCE"]
@@ -83,18 +84,17 @@ def note_above_threshold(note: np.ndarray) -> bool:
     else:
         return False
 
-def high_partials(waveform: np.ndarray, n: int) -> List[float]:
-    """TODO: FIX THIS.  Returns n highest partials of a waveform"""
+def get_partials(waveform: np.ndarray, sr: int) -> List[float]:
     normalized_wf = np.int16((waveform / waveform.max()) * 32767)
+    N = len(normalized_wf)
     yf = rfft(normalized_wf)
-    sorted_freqs = np.argsort(yf)
-    filt_freqs = sorted_freqs[sorted_freqs < 20000]
-    bins = np.arange(0, 20000, 10)
-    ind = np.digitize(filt_freqs, bins=bins)
-    uniqs = []
-    for freq in np.flip(ind):
-        if freq not in uniqs:
-            uniqs.append(freq * 10)
-    return uniqs[:n]
+    xf = rfftfreq(N, 1 / sr)
+    half = len(xf) // 2
+    peak_sig = np.abs(yf[:half])
+    peaks, d = signal.find_peaks(peak_sig, height=100000, distance=250)  # This can be tweaked for better results
+    peaks_amps = np.array(list(map(lambda p: [p, peak_sig[p]], peaks)))
+    sorted_peaks = peaks_amps[peaks_amps[:, 1].argsort()][::-1]
+    sorted_freqs = list(map(lambda i: xf[int(i)], sorted_peaks[:, 0]))
+    return sorted_freqs
 
 

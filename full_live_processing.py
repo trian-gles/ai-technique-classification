@@ -5,6 +5,7 @@ from sub_processes.buffer_split import SplitNoteParser
 from sub_processes.identify_note import identification_process
 from pyo import *
 from librosa import resample
+from utilities.pyo_util import fill_tab_np
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
 
@@ -34,7 +35,9 @@ def main():
     t = NewTable(length=buffer_length)
     inp = Input()
     rec = TableRec(inp, table=t).play()
-    playback = DataTable(size = sr * 20)
+    playback_tab = DataTable(size = sr * 80)
+    playback_reader = Osc(table=playback_tab, freq=playback_tab.getRate())
+
     osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback
 
 
@@ -80,7 +83,11 @@ def main():
             brain.new_note(note_dict)
 
             wave_response = brain.get_wave_response()
-            if wave_response:
+            if wave_response is not None:
+                fill_tab_np(wave_response, playback_tab)
+                playback_reader.reset()
+                playback_reader.play().out()
+
                 pass # put placement into data table here!!!!
 
             identified_notes_count += 1

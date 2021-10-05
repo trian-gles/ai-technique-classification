@@ -46,6 +46,7 @@ def webrtc_request(score_str: str) -> np.ndarray:
     return nparr
 
 def play_np(nparr: np.ndarray):
+    print("Playing back wav file with sounddevice")
     sounddevice.play(nparr)
     sounddevice.wait()
 

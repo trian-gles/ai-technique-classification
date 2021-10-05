@@ -1,6 +1,6 @@
 from typing import Union
 import numpy as np
-from utilities.analysis import TECHNIQUES, int_to_string_results, high_partials
+from utilities.analysis import TECHNIQUES, int_to_string_results, get_partials
 from webrtcmix import generate_rtcscore, web_request
 
 
@@ -14,7 +14,7 @@ class Note:
         self.amp: int = note_dict["amp"]
 
     def get_high_partials(self):
-        return high_partials(self.waveform, 3)
+        return get_partials(self.waveform, 22050)[2:5]
 
 
 class Silence(Note):
@@ -76,11 +76,13 @@ class Brain:
                 print(high_ps)
                 sco = generate_rtcscore.guitar_partials_score(*high_ps)
                 wav = web_request.webrtc_request(sco)
-                web_request.play_np(wav)
+                self.response = wav
 
         self.prior_notes.add(new_note)
         self.total_notes += 1
 
     def get_wave_response(self) -> Union[np.ndarray, None]:
-        return self.response
+        resp = self.response
+        self.response = None
+        return resp
 

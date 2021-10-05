@@ -2,6 +2,7 @@ from random import randrange
 import webrtcmix.web_request as wr
 
 def guitar_partials_score(f1: float, f2: float, f3: float):
+    print(f"Making rtc score with {f1, f2, f3}")
     return f"""
 load("STRUM2")
 total_dur = 10
