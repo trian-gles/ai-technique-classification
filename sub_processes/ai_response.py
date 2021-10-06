@@ -4,6 +4,9 @@ from utilities.analysis import TECHNIQUES, int_to_string_results, get_partials
 from webrtcmix import generate_rtcscore, web_request
 import librosa
 from typing import List
+from pyo import *
+from multiprocessing import Queue, Value
+from utilities.pyo_util import fill_tab_np
 
 
 class Note:
@@ -88,6 +91,7 @@ class NoteStack(Stack):
 
 
 class Brain:
+    """Controls the behaviour of the AI"""
     def __init__(self):
         self.heat = 0
         self.prior_notes = NoteStack(7)
@@ -121,4 +125,59 @@ class Brain:
         resp = self.response
         self.response = None
         return resp
+
+
+class PlaybackTable(DataTable):
+    """Tables for storing and playing wavs from RTCMIX"""
+    def __init__(self, sr: int):
+        super(PlaybackTable, self).__init__(size=sr * 80, chnls=2)
+        self.reader = TableRead(table=self, freq=self.getRate())
+
+    def play_wav(self, wav: np.ndarray):
+        fill_tab_np(wav, self)
+        self.reader.reset()
+        self.reader.play().out()
+
+    def check_playing(self) -> bool:
+        return self.reader.isPlaying()
+
+
+class TableManager:
+    def __init__(self, voices, sr):
+        self.voices = voices
+        self.tabs = [PlaybackTable(sr) for _ in range(voices)]
+        self.cursor = 0
+
+    def allocate_wav(self, wav: np.ndarray):
+        init_index = self.cursor
+        while True:
+            if not self.tabs[self.cursor].check_playing():
+                self.tabs[self.cursor].play_wav(wav)
+                break
+
+            self.cursor = (self.cursor + 1) % self.voices
+            if init_index == self.cursor:
+                print("Could find empty table")
+                self.tabs[self.cursor].play_wav(wav)
+                break
+
+
+def ai_process(identified_notes: Queue, ready_count: Value, finished: Value, ready: Value):
+    sr = 44100
+    s = Server(sr=44100).boot()
+    brain = Brain()
+    table_man = TableManager(3, sr)
+    print("AI ready to go")
+
+    while ready.value == 0:  # wait for all processes to be ready
+        pass
+
+    while not finished.value == 1:
+        if not identified_notes.empty():
+            note_dict = identified_notes.get()
+            brain.new_note(note_dict)
+
+            wave_response = brain.get_wave_response()
+            if wave_response is not None:
+                table_man.allocate_wav(wave_response)
 

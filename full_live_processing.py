@@ -1,11 +1,11 @@
 import numpy as np
 from multiprocessing import Process, Queue, Value
-from sub_processes.brain import Brain
+from sub_processes.ai_response import ai_process
 from sub_processes.buffer_split import SplitNoteParser
 from sub_processes.identify_note import identification_process
 from pyo import *
 from librosa import resample
-from utilities.pyo_util import fill_tab_np
+
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
 
@@ -26,8 +26,7 @@ def main():
 
 
     ###### Create objects for individual processes ######
-    parser = SplitNoteParser(buffer_excerpts, unidentified_notes, finished)
-    brain = Brain()
+    parser = SplitNoteParser(buffer_excerpts, unidentified_notes, ready, finished)
 
     ###### Set up PYO #######  THIS SHOULD GET IT'S OWN FILE AND FUNCTION
     s = Server(sr=sr)
@@ -35,9 +34,6 @@ def main():
     t = NewTable(length=buffer_length)
     inp = Input()
     rec = TableRec(inp, table=t).play()
-    playback_tab = DataTable(size = sr * 80, chnls=2)
-    playback_reader = Osc(table=playback_tab, freq=playback_tab.getRate())
-
     osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback
 
 
@@ -65,6 +61,10 @@ def main():
     note_split = Process(target=parser.mainloop)
     note_split.start()
 
+    print("Starting AI...")
+    ai = Process(target=ai_process, args=(identified_notes, ready_count, finished, ready))
+    ai.start()
+
     while ready_count.value != number_of_processes:
         pass
     cur_time = time.time()
@@ -78,22 +78,7 @@ def main():
     s.start()
 
     while True:
-        if not identified_notes.empty():
-            note_dict = identified_notes.get()
-            brain.new_note(note_dict)
-
-            wave_response = brain.get_wave_response()
-            if wave_response is not None:
-                fill_tab_np(wave_response, playback_tab)
-                playback_reader.reset()
-                playback_reader.play().out()
-
-                pass # put placement into data table here!!!!
-
-            identified_notes_count += 1
-        if ready_to_quit:
-            finished.value = 1
-            break
+        break
 
     print(f"Total time : {time.time() - cur_time}, notes identified = {identified_notes_count}")
 
