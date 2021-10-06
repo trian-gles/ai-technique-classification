@@ -171,7 +171,7 @@ def ai_process(identified_notes: Queue, ready_count: Value, finished: Value, rea
 
     while ready.value == 0:  # wait for all processes to be ready
         pass
-
+    s.start()
     while not finished.value == 1:
         if not identified_notes.empty():
             note_dict = identified_notes.get()

@@ -67,20 +67,14 @@ def main():
 
     while ready_count.value != number_of_processes:
         pass
-    cur_time = time.time()
-    print("All processes ready")
+    print("All processes ready, initiating piece")
     ready.value = 1
-
-    identified_notes_count = 0
-    ready_to_quit = False
 
     ###### Finally run the PYO server ######
     s.start()
 
     while True:
-        break
-
-    print(f"Total time : {time.time() - cur_time}, notes identified = {identified_notes_count}")
+        pass
 
 
 if __name__ == "__main__":
