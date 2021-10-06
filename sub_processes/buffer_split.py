@@ -21,15 +21,19 @@ class SplitNoteParser:
         self.unidentified_notes = unidentified_notes
 
     def mainloop(self):
+
         while self.ready.value == 0:  # wait for all processes to be ready
             pass
+        print("BUFFER SPLIT MAINLOOP")
         while not self.finished.value == 1:
             try:
-                buf_excerpt: np.ndarray = self.buffer_excerpts.get_nowait()
+                buf_excerpt: np.ndarray = np.array(self.buffer_excerpts.get_nowait())
             except queue.Empty:
                 continue
             else:
+                print("New buffer")
                 self._parse_buffer(buf_excerpt)
+        print("BUFFER SPLIT FINISHED")
         return True
 
 

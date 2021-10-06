@@ -40,14 +40,15 @@ class TableManager:
                 break
 
 class AudioServer:
-    def __init__(self, buffer_excerpts: Queue, ready: Value, finished: Value):
+    def __init__(self, buffer_excerpts: Queue, wav_responses: Queue, ready: Value, finished: Value):
         self.s = Server(buffersize=2048)
         self.s.deactivateMidi()
         self.s.boot()
 
         self.buffer_excerpts = buffer_excerpts
+        self.wav_responses = wav_responses
 
-        self.table_man = TableManager(3, self.s.getSamplingRate())
+        self.table_man = TableManager(3, int(self.s.getSamplingRate()))
 
         self.t = DataTable(size=self.s.getBufferSize())
         self.inp = Input()
@@ -55,12 +56,13 @@ class AudioServer:
         self.osc = Osc(table=self.t, freq=self.t.getRate(), mul=0.5).out()  # simple playback
         self.s.setCallback(self.callback)
 
+
     def callback(self):
         tablist = self.t.getTable()
         self.buffer_excerpts.put(tablist)
         self.rec.play()
 
-    def start(self):
+    def main(self):
         self.s.start()
 
     def playback_wav(self, wav: np.ndarray):
