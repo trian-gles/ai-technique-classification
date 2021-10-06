@@ -11,15 +11,18 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
 # NEEDS TO LIMIT BUFFERS TO 16000 SAMPLES, OTHERWISE SEND "SILENCE"
 ####
 class SplitNoteParser:
-    def __init__(self, buffer_excerpts: Queue, unidentified_notes: Queue, finished: Value):
+    def __init__(self, buffer_excerpts: Queue, unidentified_notes: Queue, ready: Value, finished: Value):
         self.leftover_buf = np.ndarray([])
         self.lb_empty = True
+        self.ready = ready
         self.finished = finished
         self.new_buf = np.ndarray([])
         self.buffer_excerpts = buffer_excerpts
         self.unidentified_notes = unidentified_notes
 
     def mainloop(self):
+        while self.ready.value == 0:  # wait for all processes to be ready
+            pass
         while not self.finished.value == 1:
             try:
                 buf_excerpt: np.ndarray = self.buffer_excerpts.get_nowait()
