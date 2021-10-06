@@ -53,19 +53,41 @@ class AudioServer:
         self.t = DataTable(size=self.s.getBufferSize())
         self.inp = Input()
         self.rec = TableRec(self.inp, table=self.t).play()
-        self.osc = Osc(table=self.t, freq=self.t.getRate(), mul=0.5).out()  # simple playback
-        self.s.setCallback(self.callback)
+
+        def callback():
+            tablist = self.t.getTable()
+            self.buffer_excerpts.put(tablist)
+            self.rec.play()
+
+        self.s.setCallback(callback)
 
 
-    def callback(self):
-        tablist = self.t.getTable()
-        self.buffer_excerpts.put(tablist)
-        self.rec.play()
+
+
 
     def main(self):
+        self.osc = Osc(table=self.t, freq=self.t.getRate(), mul=0.5).out()  # simple playback
         self.s.start()
+        while True:
+            pass
 
     def playback_wav(self, wav: np.ndarray):
         self.table_man.allocate_wav(wav)
 
+
+def test():
+    ###### Set up shared information ######
+    buffer_excerpts = Queue()  # contains 2 second snippets of buffer that needs to be split into notes
+    unidentified_notes = Queue()  # stores waveforms of prepared notes that must be identified
+    identified_notes = Queue()  # stores arrays of ints indicating the most to least likely technique
+    wav_responses = Queue()  # wav files to be played back by the audio server
+    ready_count = Value('i', 0)  # track how many processes are ready
+    finished = Value('i', 0)  # track how many processes are finished
+    ready = Value('i', 0)  # signal to all subprocesses that we can start
+
+    auser = AudioServer(buffer_excerpts, wav_responses, ready, finished)
+    auser.main()
+
+if __name__ == "__main__":
+    test()
 
