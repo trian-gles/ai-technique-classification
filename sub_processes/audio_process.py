@@ -49,6 +49,7 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, ready: Value, fin
     t = DataTable(size=s.getBufferSize())
     inp = Input()
     rec = TableRec(inp, table=t).play()
+    count = 0
 
     def callback():
         tablist = t.getTable()
@@ -59,48 +60,11 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, ready: Value, fin
     osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback
 
     ready.value = 1
-
     s.start()
-    while True:
+    while finished.value == 0:
         if not wav_responses.empty():
             new_wav = wav_responses.get()
             table_man.allocate_wav(new_wav)
-
-
-class AudioServer:
-    def __init__(self, buffer_excerpts: Queue, wav_responses: Queue, ready: Value, finished: Value):
-        self.s = Server(buffersize=2048)
-        self.s.deactivateMidi()
-        self.s.boot()
-
-        self.buffer_excerpts = buffer_excerpts
-        self.wav_responses = wav_responses
-
-        self.table_man = TableManager(3, int(self.s.getSamplingRate()))
-
-        self.t = DataTable(size=self.s.getBufferSize())
-        self.inp = Input()
-        self.rec = TableRec(self.inp, table=self.t).play()
-        self.s.setCallback(self.callback)
-
-    def callback(self):
-        tablist = self.t.getTable()
-        self.buffer_excerpts.put(tablist)
-        self.t.reset()
-        self.rec.play()
-
-
-
-
-
-    def main(self):
-        self.osc = Osc(table=self.t, freq=self.t.getRate(), mul=0.5).out()  # simple playback
-        print("Running main")
-        self.s.start()
-
-
-    def playback_wav(self, wav: np.ndarray):
-        self.table_man.allocate_wav(wav)
 
 
 def test():
@@ -121,6 +85,8 @@ def test():
 
 
     audio_server(buffer_excerpts, wav_responses, ready, finished)
+
+    print("Finished")
 
 
 if __name__ == "__main__":

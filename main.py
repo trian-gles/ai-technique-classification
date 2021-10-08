@@ -3,7 +3,7 @@ from multiprocessing import Process, Queue, Value
 from sub_processes.ai_response import Brain
 from sub_processes.buffer_split import SplitNoteParser
 from sub_processes.identify_note import identification_process
-from sub_processes.audio_process import AudioServer
+from sub_processes.audio_process import audio_server
 import os
 
 
@@ -45,14 +45,14 @@ def main():
     ai = Process(target=brain.main)
     ai.start()
 
-    print("Starting main audio loop...")
-    audio = AudioServer(buffer_excerpts, wav_responses, ready, finished)
+
+
 
     while ready_count.value != number_of_processes:
         pass
-    print("All processes ready, initiating piece")
+    print("All processes ready, initiating audio")
     ready.value = 1
-    audio.main()
+    audio_server(buffer_excerpts, wav_responses, ready, finished)
 
 
 if __name__ == "__main__":
