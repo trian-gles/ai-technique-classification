@@ -39,13 +39,12 @@ class TableManager:
                 self.tabs[self.cursor].play_wav(wav)
                 break
 
+
 def audio_server(buffer_excerpts: Queue, wav_responses: Queue, ready: Value, finished: Value):
     """Still needs to handle new audio"""
     s = Server(buffersize=2048)
     s.deactivateMidi()
     s.boot()
-    buffer_excerpts = buffer_excerpts
-    wav_responses = wav_responses
     table_man = TableManager(3, int(s.getSamplingRate()))
     t = DataTable(size=s.getBufferSize())
     inp = Input()
@@ -58,10 +57,14 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, ready: Value, fin
 
     s.setCallback(callback)
     osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback
-    print("Running main")
+
+    ready.value = 1
+
     s.start()
     while True:
-        pass
+        if not wav_responses.empty():
+            new_wav = wav_responses.get()
+            table_man.allocate_wav(new_wav)
 
 
 class AudioServer:
@@ -101,6 +104,8 @@ class AudioServer:
 
 
 def test():
+    import librosa
+    import webrtcmix.web_request
     ###### Set up shared information ######
     buffer_excerpts = Queue()  # contains 2 second snippets of buffer that needs to be split into notes
     unidentified_notes = Queue()  # stores waveforms of prepared notes that must be identified
@@ -109,7 +114,14 @@ def test():
     ready_count = Value('i', 0)  # track how many processes are ready
     finished = Value('i', 0)  # track how many processes are finished
     ready = Value('i', 0)  # signal to all subprocesses that we can start
+
+    wav = webrtcmix.web_request.webrtc_request(webrtcmix.web_request.score_str1)
+
+    wav_responses.put(wav)
+
+
     audio_server(buffer_excerpts, wav_responses, ready, finished)
+
 
 if __name__ == "__main__":
     test()
