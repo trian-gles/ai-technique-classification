@@ -39,6 +39,31 @@ class TableManager:
                 self.tabs[self.cursor].play_wav(wav)
                 break
 
+def audio_server(buffer_excerpts: Queue, wav_responses: Queue, ready: Value, finished: Value):
+    """Still needs to handle new audio"""
+    s = Server(buffersize=2048)
+    s.deactivateMidi()
+    s.boot()
+    buffer_excerpts = buffer_excerpts
+    wav_responses = wav_responses
+    table_man = TableManager(3, int(s.getSamplingRate()))
+    t = DataTable(size=s.getBufferSize())
+    inp = Input()
+    rec = TableRec(inp, table=t).play()
+
+    def callback():
+        tablist = t.getTable()
+        buffer_excerpts.put(tablist)
+        rec.play()
+
+    s.setCallback(callback)
+    osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback
+    print("Running main")
+    s.start()
+    while True:
+        pass
+
+
 class AudioServer:
     def __init__(self, buffer_excerpts: Queue, wav_responses: Queue, ready: Value, finished: Value):
         self.s = Server(buffersize=2048)
@@ -53,13 +78,13 @@ class AudioServer:
         self.t = DataTable(size=self.s.getBufferSize())
         self.inp = Input()
         self.rec = TableRec(self.inp, table=self.t).play()
+        self.s.setCallback(self.callback)
 
-        def callback():
-            tablist = self.t.getTable()
-            self.buffer_excerpts.put(tablist)
-            self.rec.play()
-
-        self.s.setCallback(callback)
+    def callback(self):
+        tablist = self.t.getTable()
+        self.buffer_excerpts.put(tablist)
+        self.t.reset()
+        self.rec.play()
 
 
 
@@ -67,9 +92,9 @@ class AudioServer:
 
     def main(self):
         self.osc = Osc(table=self.t, freq=self.t.getRate(), mul=0.5).out()  # simple playback
+        print("Running main")
         self.s.start()
-        while True:
-            pass
+
 
     def playback_wav(self, wav: np.ndarray):
         self.table_man.allocate_wav(wav)
@@ -84,9 +109,7 @@ def test():
     ready_count = Value('i', 0)  # track how many processes are ready
     finished = Value('i', 0)  # track how many processes are finished
     ready = Value('i', 0)  # signal to all subprocesses that we can start
-
-    auser = AudioServer(buffer_excerpts, wav_responses, ready, finished)
-    auser.main()
+    audio_server(buffer_excerpts, wav_responses, ready, finished)
 
 if __name__ == "__main__":
     test()
