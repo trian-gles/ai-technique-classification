@@ -2,6 +2,7 @@ import numpy as np
 from multiprocessing import Process, Queue, Value
 import queue
 from utilities.analysis import find_onsets, note_above_threshold
+from librosa import resample
 import soundfile
 import os
 
@@ -21,6 +22,8 @@ class SplitNoteParser:
         self.unidentified_notes = unidentified_notes
 
     def mainloop(self):
+        short_buffer = None
+        short_buffer_empty = True
 
         while self.ready.value == 0:  # wait for all processes to be ready
             pass
@@ -31,8 +34,19 @@ class SplitNoteParser:
             except queue.Empty:
                 continue
             else:
-                print("New buffer")
-                self._parse_buffer(buf_excerpt)
+                buf_excerpt = resample(buf_excerpt, 44100, 22050)
+
+                if short_buffer_empty:
+                    short_buffer = buf_excerpt
+                    short_buffer_empty = False
+                else:
+                    short_buffer = np.concatenate((short_buffer, buf_excerpt))
+                    if len(short_buffer) > 11025:
+                        self._parse_buffer(short_buffer)
+                        short_buffer_empty = True
+
+
+
         print("BUFFER SPLIT FINISHED")
         return True
 
@@ -58,7 +72,8 @@ class SplitNoteParser:
         """Checks if the note is loud enough and the buffer is long enough"""
         thresh = note_above_threshold(note)
         try:
-            long_enough = len(self.leftover_buf) > 2048
+            long_enough = (len(self.leftover_buf) > 2048)
+
         except TypeError:
             long_enough = False
         return thresh and long_enough
@@ -78,11 +93,12 @@ class SplitNoteParser:
 
     def _check_length(self):
         """If the current buffer is too long, just send it"""
-        if len(self.leftover_buf) > 16000:
-            #print("Leftover buf exceeded maximum")
+        if len(self.leftover_buf) > 32000:
+            print("Leftover buf exceeded maximum")
             self._send_lb()
 
     def _send_lb(self):
+        print("SENDING BUFFER")
         self.unidentified_notes.put(self.leftover_buf)
         self._empty_lb()
 

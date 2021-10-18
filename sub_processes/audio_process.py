@@ -67,28 +67,82 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, ready: Value, fin
             table_man.allocate_wav(new_wav)
 
 
-def test():
+def test_playback():
     import librosa
     import webrtcmix.web_request
     ###### Set up shared information ######
     buffer_excerpts = Queue()  # contains 2 second snippets of buffer that needs to be split into notes
-    unidentified_notes = Queue()  # stores waveforms of prepared notes that must be identified
-    identified_notes = Queue()  # stores arrays of ints indicating the most to least likely technique
     wav_responses = Queue()  # wav files to be played back by the audio server
-    ready_count = Value('i', 0)  # track how many processes are ready
     finished = Value('i', 0)  # track how many processes are finished
     ready = Value('i', 0)  # signal to all subprocesses that we can start
-
     wav = webrtcmix.web_request.webrtc_request(webrtcmix.web_request.score_str1)
-
     wav_responses.put(wav)
-
-
     audio_server(buffer_excerpts, wav_responses, ready, finished)
 
     print("Finished")
 
 
+def test_buffer_quality():
+    buffer_excerpts = Queue()  # contains 2 second snippets of buffer that needs to be split into notes
+    wav_responses = Queue()  # wav files to be played back by the audio server
+    finished = Value('i', 0)  # track how many processes are finished
+    ready = Value('i', 0)  # signal to all subprocesses that we can start
+
+    def buffer_gather_process(buffer_excerpts: Queue, wav_responses: Queue):
+        start_time = time.time()
+        while (time.time() - start_time) < 10:
+            pass
+        print("finished")
+        playback_buffers = buffer_excerpts.get()
+        while not buffer_excerpts.empty():
+            playback_buffers = np.concatenate((playback_buffers, buffer_excerpts.get()))
+        wav_responses.put(playback_buffers)
+
+
+    test_buffer = Process(target=buffer_gather_process, args=(buffer_excerpts, wav_responses))
+    test_buffer.start()
+    audio_server(buffer_excerpts, wav_responses, ready, finished)
+
+def buffer_gather_test_process(buffer_excerpts: Queue, wav_responses: Queue):
+    empty_buf = True
+    playback_buffer = None
+
+    while True:
+        if not buffer_excerpts.empty():
+            if empty_buf:
+                playback_buffer = buffer_excerpts.get()
+                empty_buf = False
+            else:
+                playback_buffer = np.concatenate((playback_buffer, buffer_excerpts.get()))
+                if len(playback_buffer) > 441000:
+                    break
+
+
+
+    print("Finished")
+    import soundfile
+    print(playback_buffer)
+    soundfile.write("test_buffer.wav", playback_buffer, 44100)
+
+
+
+
+
+
+    print("Ten seconds is up")
+
+
 if __name__ == "__main__":
-    test()
+    buffer_excerpts = Queue()  # contains 2 second snippets of buffer that needs to be split into notes
+    wav_responses = Queue()  # wav files to be played back by the audio server
+    finished = Value('i', 0)  # track how many processes are finished
+    ready = Value('i', 0)  # signal to all subprocesses that we can start
+
+
+
+
+
+    test_buffer = Process(target=buffer_gather_test_process, args=(buffer_excerpts, wav_responses))
+    test_buffer.start()
+    audio_server(buffer_excerpts, wav_responses, ready, finished)
 
