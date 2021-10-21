@@ -10,7 +10,14 @@ TECHNIQUES = ["IGNORE", "Slide", "Tasto", "Harm", "Pont", "Chord", "Smack", "SIL
 
 def find_onsets(y: np.ndarray, sr: int) -> np.ndarray:
     """Takes a numpy array and returns an array of onsets, currenly using librosa"""
-    return librosa.onset.onset_detect(y, sr=sr, backtrack=True, units="samples")
+    #return librosa.onset.onset_detect(y, sr=sr, backtrack=True, units="samples")
+    print(len(y))
+    o_env = librosa.onset.onset_strength(y=y, sr=sr, max_size=8)
+    samps = librosa.samples_like(o_env)
+    return librosa.onset.onset_detect(onset_envelope=o_env, sr=sr, backtrack=True, units="samples",
+                                          delta=4.3, hop_length=512, normalize=False,
+                                          pre_max = 1.0, post_max = 1.0, pre_avg = 4.0, post_avg = 5.0, wait = 1.0)
+
 
 
 def get_waveform_from_ndarray(audio: np.ndarray, tf):

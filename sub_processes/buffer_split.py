@@ -2,7 +2,7 @@ import numpy as np
 from multiprocessing import Process, Queue, Value
 import queue
 from utilities.analysis import find_onsets, note_above_threshold
-from librosa import resample
+from librosa import ParameterError
 import soundfile
 import os
 
@@ -34,14 +34,13 @@ class SplitNoteParser:
             except queue.Empty:
                 continue
             else:
-                buf_excerpt = resample(buf_excerpt, 44100, 22050)
 
                 if short_buffer_empty:
                     short_buffer = buf_excerpt
                     short_buffer_empty = False
                 else:
                     short_buffer = np.concatenate((short_buffer, buf_excerpt))
-                    if len(short_buffer) > 11025:
+                    if len(short_buffer) > 22050: # try different values here
                         self._parse_buffer(short_buffer)
                         short_buffer_empty = True
 
@@ -53,7 +52,12 @@ class SplitNoteParser:
 
 
     def _parse_buffer(self, new_buf: np.ndarray):
-        note_ons = find_onsets(new_buf, 22050)
+        try:
+            note_ons = find_onsets(new_buf, 22050)
+        except ParameterError:
+            # still figuring this out...
+            self._add_to_lb(new_buf)
+            return
 
         if len(note_ons) == 0: # there are no onsets despite being loud enough
             self._add_to_lb(new_buf)
@@ -94,11 +98,9 @@ class SplitNoteParser:
     def _check_length(self):
         """If the current buffer is too long, just send it"""
         if len(self.leftover_buf) > 32000:
-            print("Leftover buf exceeded maximum")
             self._send_lb()
 
     def _send_lb(self):
-        print("SENDING BUFFER")
         self.unidentified_notes.put(self.leftover_buf)
         self._empty_lb()
 

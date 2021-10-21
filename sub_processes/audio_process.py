@@ -9,15 +9,28 @@ class PlaybackTable(DataTable):
     def __init__(self, sr: int):
         super(PlaybackTable, self).__init__(size=sr * 80, chnls=2)
         self.reader = TableRead(table=self, freq=self.getRate())
+        self.length = 0
+        self.start_time = 0
 
     def play_wav(self, arr):
+        self.length = arr.shape[0] / 44100
         samplist = [list(arr[:, 0]), list(arr[:, 1])]
+
         self.replace(samplist)
         self.reader.reset()
+
+
+        self.start_time = time.time()
         self.reader.play().out()
 
     def check_playing(self) -> bool:
-        return self.reader.isPlaying()
+        if not self.reader.isPlaying():
+            return False
+
+        if (time.time() - self.start_time) > self.length:
+            return False
+        else:
+            return True
 
 
 class TableManager:

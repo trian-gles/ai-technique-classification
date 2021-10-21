@@ -23,7 +23,7 @@ float rand_pat(float freq, float total_dur, float minnum, float maxnum)
 
 	for (j = 0; j < n; j += 1)
     {{
-    	STRUM2(start_time, 1.4, 20000 / (j / 4 + 1), freq, 10, 1.4, 0.5);
+    	STRUM2(start_time, 1.4, 20000 / (j / 4 + 1), freq, 10, 1.4, (rand() + 1) / 2);
         inc += slow_down
       	start_time += inc
     }}
