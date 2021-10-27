@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from typing import List, Union
 from webrtcmix.web_request import webrtc_request, play_np
 from audiolazy import lazy_midi
-from random import randrange, getrandbits, uniform, choice, seed
+from random import randrange, getrandbits, uniform, choice, seed, shuffle
 
-with open("blank_all_features.sco") as f:
+with open("webrtcmix/blank_all_features.sco") as f:
     empty_score = f.read()
 
 
@@ -36,7 +36,7 @@ class Node:
 
 class TreeContainer:
     """TODO: make nodes with same names doable.  Also make cursors copy at certain depths"""
-    def __init__(self, nodes: List[Node] = None):
+    def __init__(self, nodes: List[Node] = None, **kwargs):
         self.G = nx.DiGraph()
         self.nodes = nodes if nodes else []
 
@@ -50,9 +50,12 @@ class TreeContainer:
         "limit_max_cursor_nums": {},
         "hardness": 8,
         "upper_decay": 1,
-        "gliss_mode": "'uncoor'",
+        "gliss_mode": "'uncoor'", #none, uncoor, coor_stop
         "coor_stop_time": 20
         }
+
+        for key, value in kwargs.items():
+            self.params[key] = value
 
     def merge_with_other(self, other_cont, right_gate_delay: int = None, left_gate_max: int = None) -> bool:
         unlinked_node = self.find_unlinked_right_node()
@@ -105,7 +108,10 @@ class TreeContainer:
             print("looping")
             more_pitches_count = len(more_pitches)
             while i <= more_pitches_count:
-                old_pitch = more_pitches[i]
+                try:
+                    old_pitch = more_pitches[i]
+                except IndexError:
+                    break
 
                 add = choice(intervals)
                 if getrandbits(1):
@@ -204,8 +210,6 @@ class TreeContainer:
                 print(f"can't connect {unc_node.pitch}")
                 delete_nodes.append(unc_node)
 
-
-
         loop = self.check_loop()
         if not loop:
             try:
@@ -214,6 +218,15 @@ class TreeContainer:
                 choice(self.nodes[1:]).right_edge = self.nodes[0].pitch
                 for n in delete_nodes:
                     self.remove_node(n)
+
+    def erase_connections(self, shuf = True):
+        for node in self.nodes:
+            node.right_edge = None
+            node.left_edge = None
+
+        if shuf:
+            shuffle(self.nodes)
+        self.G = nx.DiGraph()
 
     def remove_node(self, rm_node: Node):
         """TODO needs an additional setting for repairing a broken graph"""
@@ -291,9 +304,9 @@ def save_container(cont: TreeContainer, name: str):
 
 def test_rand():
     print("Testing random graph")
-    container = TreeContainer()
+    container = TreeContainer(gliss_mode="'none'")
     Node.container = container
-    container.rand_graph_intervals(intervals=[3, 7], num_nodes=6)
+    container.rand_graph_intervals(intervals=[1, 5], num_nodes=6, pitches=("E3",))
     print(container.check_loop())
     container.visualize()
     container.listen()
@@ -303,7 +316,7 @@ def test_rand():
 def test_merge():
     seed(3) # 3 works, also 9
     print("Testing random graph")
-    container = TreeContainer()
+    container = TreeContainer(init_curs = 3)
     container.rand_graph_intervals(intervals=[3, 7], num_nodes=4)
     # container.visualize()
     # container.listen()
@@ -314,11 +327,27 @@ def test_merge():
     # other_container.visualize()
     # other_container.listen()
     # other_container.hide()
-    if container.merge_with_other(other_container, 6, 8):
+    if container.merge_with_other(other_container, 5, 8):
         container.visualize()
         container.listen()
     else:
         print("Unlinkable")
+
+def test_recombine():
+    seed(12)
+    container = TreeContainer(gliss_mode="'none'", max_dur="15", max_curs=100, tempo=200)
+    Node.container = container
+    container.rand_graph_intervals(intervals=[9, 5], num_nodes=6, pitches=("E2",))
+    container.visualize()
+    container.listen()
+    container.hide()
+    container.erase_connections()
+    container.make_random_connections()
+    container.make_all_connected()
+    container.visualize()
+    container.listen()
+
+
 
 
 
@@ -343,6 +372,6 @@ def test_preset():
 
 
 if __name__ == "__main__":
-    test_merge()
+    test_recombine()
 
 

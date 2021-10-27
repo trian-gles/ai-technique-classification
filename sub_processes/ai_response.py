@@ -1,11 +1,13 @@
 from typing import Union
 import numpy as np
 from utilities.analysis import TECHNIQUES, int_to_string_results, get_partials
-from webrtcmix import generate_rtcscore, web_request
+from webrtcmix import generate_rtcscore, web_request, binary_scores
+from audiolazy.lazy_midi import freq2midi, midi2str
 import librosa
 from typing import List
 from multiprocessing import Queue, Value, Process
 import queue
+import threading
 
 
 class Note:
@@ -47,6 +49,9 @@ class NotSilence(Note):
         all_partials = get_partials(self.waveform, 22050)
         return min(all_partials)
 
+    def get_amp(self) -> float:
+        return np.max(self.waveform)
+
 
     def get_high_partials(self) -> List[float]:
         fund = self.get_fundamental()
@@ -67,32 +72,41 @@ def dict_to_note(note_dict: dict) -> Note:
 
 class Stack:
     def __init__(self, depth: int):
-        self.list = []
-        self.depth = depth
+        self._list = []
+        self._depth = depth
 
     def add(self, val):
-        self.list.insert(0, val)
-        if len(self.list) > self.depth:
-            self.list = self.list[:-2]
+        self._list.insert(0, val)
+        if len(self._list) > self._depth:
+            self._list = self._list[:-2]
 
-    def peek(self):
-        """Look at the top value"""
-        return self.list[0]
+    def peek(self, index: int):
+        """Look at a value"""
+        return self._list[index]
 
 
 class NoteStack(Stack):
-    def filter_to_list(self, entry: str):
-        return [note[entry] for note in self.list]
-
     def add(self, new_note: Note):
         """Handle combining of silences"""
         super(NoteStack, self).add(new_note)
 
+    def get_predictions(self) -> List[str]:
+        return [n.prediction for n in self._list]
+
+    def majority_silence(self):
+        predictions = self.get_predictions()
+        if predictions.count("SILENCE") >= len(predictions) // 2:
+            return True
+
+    def check_contains(self, prediction: str):
+        preds = self.get_predictions()
+        if prediction in preds[1:]:
+            return True
 
 class Brain:
     """Controls the behaviour of the AI"""
     def __init__(self, wav_responses: Queue, identified_notes: Queue, ready: Value, finished: Value):
-        self.heat = 0
+        self.heat = False
         self.prior_notes = NoteStack(7)
 
         self.wav_responses = wav_responses
@@ -114,27 +128,72 @@ class Brain:
     def new_note(self, note_dict: dict):
         new_note = dict_to_note(note_dict)
 
-        if new_note.prediction == "SILENCE" and self.total_notes > 0:
-            prior_note: Note = self.prior_notes.peek()
-            if prior_note.prediction == "Pont":
-                high_ps = prior_note.get_high_partials()
-                print(high_ps)
-                sco = generate_rtcscore.guitar_partials_score(*high_ps)
-                wav = web_request.webrtc_request(sco)
-                self.send_wav_response(wav)
-
-        if new_note.prediction == "Chord":
-            if new_note.amp > 0.2:
-                fund = new_note.get_fundamental()
-                if fund < 130:
-                    sco = generate_rtcscore.funny_scale_score(fund)
-                    wav = web_request.webrtc_request(sco)
-                    self.send_wav_response(wav)
-
-
         self.prior_notes.add(new_note)
         self.total_notes += 1
 
-    def send_wav_response(self, wav: np.ndarray):
+        if self.total_notes < 5: # can't peek at prior notes at the beginning
+            return
+        self.check_heat()
+
+        if new_note.prediction == "SILENCE":
+            prior_note: Note = self.prior_notes.peek(1)
+            if prior_note.prediction == "Pont":
+                high_ps = prior_note.get_high_partials()
+                sco = generate_rtcscore.guitar_partials_score(*high_ps)
+                self.get_send_rtc_response(sco)
+
+        if new_note.prediction == "Harm":
+            if self.prior_notes.check_contains("Harm") and not self.heat:
+                cont = binary_scores.TreeContainer()
+                cont.rand_graph_intervals([6, 9], num_nodes=6, pitches=(("E6"),))
+                sco = cont.get_rtc_score()
+                self.get_send_rtc_response(sco)
+
+        if new_note.prediction == "Chord":
+            new_note: NotSilence = new_note
+            if new_note.amp > 0.2:
+                fund = new_note.get_fundamental()
+                amp = new_note.get_amp()
+                print(f"AMP OF CHORD : {amp}")
+                if fund < 130 and amp > 0.5:
+                    fund_pitch = midi2str(round(freq2midi(fund)))
+                    cont = binary_scores.TreeContainer()
+                    cont.rand_graph_intervals([1, 5], num_nodes=6, pitches=(fund_pitch,))
+                    sco = cont.get_rtc_score()
+                    self.get_send_rtc_response(sco)
+
+    def get_send_rtc_response(self, sco: str):
+        new_thread = threading.Thread(target=self.async_rtc_call, args=(sco,))
+        new_thread.start()
+
+    def async_rtc_call(self, sco):
+        wav = web_request.webrtc_request(sco)
         self.wav_responses.put(wav)
+
+    def check_heat(self):
+        if self.prior_notes.majority_silence():
+            self.set_heat(False)
+        else:
+            self.set_heat(True)
+
+    def set_heat(self, high: bool):
+        if high != self.heat:
+            if high:
+                print(
+                    """
+                    #############
+                    # HIGH HEAT #
+                    #############
+                    """)
+
+            else:
+                print("""
+                    #############
+                    # LOW HEAT #
+                    #############
+                    """)
+
+        self.heat = high
+
+
 

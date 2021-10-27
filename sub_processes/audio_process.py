@@ -40,6 +40,7 @@ class TableManager:
         self.cursor = 0
 
     def allocate_wav(self, wav: np.ndarray):
+        # TODO - this should fade the next up table if all tables are full
         init_index = self.cursor
         while True:
             if not self.tabs[self.cursor].check_playing():

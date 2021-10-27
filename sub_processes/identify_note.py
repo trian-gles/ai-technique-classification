@@ -1,5 +1,6 @@
 from multiprocessing import Queue, Value, current_process
 from utilities.analysis import numpy_to_tfdata, prediction_to_int_ranks, note_above_threshold
+from librosa import resample
 import queue
 import numpy as np
 
@@ -7,7 +8,7 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
                            ready_count: Value, finished: Value, ready: Value):
     """Subprocess which will classify notes in unidentified_notes and place them in identified_notes"""
     #  I should use time to make sure this ALWAYS lasts the same amount of time
-    #
+    #  TODO - MAKE SURE NOTES ARENT AT WRONG SAMPLING RATE
     import tensorflow as tfp
     print(f"Starting process {current_process().name}")
     model = tfp.keras.models.load_model("savedModel")

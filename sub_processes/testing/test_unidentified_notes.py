@@ -21,6 +21,23 @@ def test_split_buffers(unidentified_notes: Queue, ready: Value, finished: Value)
         soundfile.write(f"test_unidentified_notes/note_{num_notes}.wav", note, 22050)
         num_notes += 1
 
+def listen_split_buffers(unidentified_notes: Queue, ready: Value, finished: Value):
+    import soundfile
+    import librosa
+    num_notes = 0
+    while ready.value == 0:  # wait for all processes to be ready
+        pass
+    while True:
+        if finished.value == 1:  # the main process says it's time to quit
+            break
+        try:
+            note: np.ndarray = unidentified_notes.get_nowait()
+        except queue.Empty:
+            continue
+        soundfile.write(f"test_unidentified_notes/note_{num_notes}.wav", note, 22050)
+        num_notes += 1
+
+
 
 def main():
     number_of_processes = 1

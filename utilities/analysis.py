@@ -11,7 +11,6 @@ TECHNIQUES = ["IGNORE", "Slide", "Tasto", "Harm", "Pont", "Chord", "Smack", "SIL
 def find_onsets(y: np.ndarray, sr: int) -> np.ndarray:
     """Takes a numpy array and returns an array of onsets, currenly using librosa"""
     #return librosa.onset.onset_detect(y, sr=sr, backtrack=True, units="samples")
-    print(len(y))
     o_env = librosa.onset.onset_strength(y=y, sr=sr, max_size=8)
     samps = librosa.samples_like(o_env)
     return librosa.onset.onset_detect(onset_envelope=o_env, sr=sr, backtrack=True, units="samples",
