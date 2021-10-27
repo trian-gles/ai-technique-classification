@@ -1,42 +1,25 @@
 import numpy as np
 from multiprocessing import Process, Queue, Value
 from sub_processes.buffer_split import SplitNoteParser
+from sub_processes.identify_note import identification_process
 from sub_processes.audio_process import audio_server
+import os
 import queue
+from utilities.analysis import TECHNIQUES, int_to_string_results
 
 
-def test_split_buffers(unidentified_notes: Queue, ready: Value, finished: Value):
-    import soundfile
-    import librosa
-    num_notes = 0
-    while ready.value == 0:  # wait for all processes to be ready
-        pass
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
+
+
+def list_predictions(identified_notes: Queue):
     while True:
-        if finished.value == 1:  # the main process says it's time to quit
-            break
+        note_dict = None
         try:
-            note: np.ndarray = unidentified_notes.get_nowait()
+            note_dict = identified_notes.get_nowait()
         except queue.Empty:
             continue
-        soundfile.write(f"test_unidentified_notes/note_{num_notes}.wav", note, 44100)
-        num_notes += 1
-
-def listen_split_buffers(unidentified_notes: Queue, ready: Value, finished: Value):
-    import soundfile
-    import librosa
-    num_notes = 0
-    while ready.value == 0:  # wait for all processes to be ready
-        pass
-    while True:
-        if finished.value == 1:  # the main process says it's time to quit
-            break
-        try:
-            note: np.ndarray = unidentified_notes.get_nowait()
-        except queue.Empty:
-            continue
-        soundfile.write(f"test_unidentified_notes/note_{num_notes}.wav", note, 22050)
-        num_notes += 1
-
+        str_results = int_to_string_results(note_dict["prediction"], TECHNIQUES)
+        print(f"New note: {str_results[0:3]}")
 
 
 def main():
@@ -56,14 +39,28 @@ def main():
     ###### Create objects for individual processes ######
     parser = SplitNoteParser(buffer_excerpts, unidentified_notes, ready, finished)
 
+    ###### Start all the processes ######
+    print("Loading tensorflow models...")
+    processes = []
+    for w in range(number_of_processes):
+        p = Process(target=identification_process,
+                    args=(unidentified_notes, identified_notes, ready_count, finished, ready))
+        processes.append(p)
+        p.start()
+
     print("Starting note split...")
     note_split = Process(target=parser.mainloop)
     note_split.start()
 
+    print("Starting AI...")
+    ai = Process(target=list_predictions, args=(identified_notes,))
+    ai.start()
 
-    buffer_save = Process(target=test_split_buffers, args=(unidentified_notes, ready, finished))
-    buffer_save.start()
 
+
+
+    while ready_count.value != number_of_processes:
+        pass
     print("All processes ready, initiating audio")
     ready.value = 1
     audio_server(buffer_excerpts, wav_responses, ready, finished)

@@ -1,41 +1,28 @@
 import numpy as np
 from multiprocessing import Process, Queue, Value
-from sub_processes.buffer_split import SplitNoteParser
 from sub_processes.audio_process import audio_server
+import os
 import queue
 
-
-def test_split_buffers(unidentified_notes: Queue, ready: Value, finished: Value):
+def test_recombined_buffers(buffer_excerpts: Queue, ready: Value, finished: Value):
     import soundfile
-    import librosa
-    num_notes = 0
+    num_bufs = 0
     while ready.value == 0:  # wait for all processes to be ready
         pass
     while True:
         if finished.value == 1:  # the main process says it's time to quit
             break
         try:
-            note: np.ndarray = unidentified_notes.get_nowait()
+            buf: np.ndarray = buffer_excerpts.get_nowait()
         except queue.Empty:
             continue
-        soundfile.write(f"test_unidentified_notes/note_{num_notes}.wav", note, 44100)
-        num_notes += 1
-
-def listen_split_buffers(unidentified_notes: Queue, ready: Value, finished: Value):
-    import soundfile
-    import librosa
-    num_notes = 0
-    while ready.value == 0:  # wait for all processes to be ready
-        pass
-    while True:
-        if finished.value == 1:  # the main process says it's time to quit
-            break
-        try:
-            note: np.ndarray = unidentified_notes.get_nowait()
-        except queue.Empty:
-            continue
-        soundfile.write(f"test_unidentified_notes/note_{num_notes}.wav", note, 22050)
-        num_notes += 1
+        if num_bufs == 0:
+            full_buf = buf
+        else:
+            full_buf = np.concatenate((full_buf, buf))
+        num_bufs += 1
+        if num_bufs == 100:
+            soundfile.write(f"test_buffers/buf.wav", full_buf, 44100)
 
 
 
@@ -53,15 +40,7 @@ def main():
     ready = Value('i', 0)  # signal to all subprocesses that we can start
 
 
-    ###### Create objects for individual processes ######
-    parser = SplitNoteParser(buffer_excerpts, unidentified_notes, ready, finished)
-
-    print("Starting note split...")
-    note_split = Process(target=parser.mainloop)
-    note_split.start()
-
-
-    buffer_save = Process(target=test_split_buffers, args=(unidentified_notes, ready, finished))
+    buffer_save = Process(target=test_recombined_buffers, args=(buffer_excerpts, ready, finished))
     buffer_save.start()
 
     print("All processes ready, initiating audio")
