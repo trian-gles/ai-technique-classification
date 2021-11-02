@@ -2,6 +2,7 @@ from pyo import *
 from multiprocessing import Queue, Value, Process
 import time
 import numpy as np
+from pyo_presets.huge_bass import StereoBass
 
 
 class PlaybackTable(DataTable):
@@ -25,12 +26,17 @@ class PlaybackTable(DataTable):
 
     def check_playing(self) -> bool:
         if not self.reader.isPlaying():
+            self.reset()
             return False
 
         if (time.time() - self.start_time) > self.length:
+            self.reset()
             return False
         else:
             return True
+
+    def fade_out_stop(self):
+        """Fade out this table to make room for new data incoming"""
 
 
 class TableManager:
@@ -41,6 +47,9 @@ class TableManager:
 
     def allocate_wav(self, wav: np.ndarray):
         # TODO - this should fade the next up table if all tables are full
+        if self.all_tabs_playing():
+            print("Can't allocate new wav, all tables are full")
+            return
         init_index = self.cursor
         while True:
             if not self.tabs[self.cursor].check_playing():
@@ -53,12 +62,18 @@ class TableManager:
                 self.tabs[self.cursor].play_wav(wav)
                 break
 
+    def all_tabs_playing(self):
+        return all([t.check_playing() for t in self.tabs])
 
-def audio_server(buffer_excerpts: Queue, wav_responses: Queue, ready: Value, finished: Value):
+
+def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Queue, ready: Value, finished: Value):
     """Still needs to handle new audio"""
     s = Server(buffersize=2048)
     s.deactivateMidi()
     s.boot()
+
+    bass = StereoBass()
+    freeverb = Freeverb(bass.get_voices(), mul=0.25).out()
     table_man = TableManager(3, int(s.getSamplingRate()))
     t = DataTable(size=s.getBufferSize())
     inp = Input()
@@ -71,7 +86,7 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, ready: Value, fin
         rec.play()
 
     s.setCallback(callback)
-    osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback
+    #osc = Osc(table=t, freq=t.getRate(), mul=0.5).out()  # simple playback
 
     ready.value = 1
     s.start()
@@ -79,6 +94,13 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, ready: Value, fin
         if not wav_responses.empty():
             new_wav = wav_responses.get()
             table_man.allocate_wav(new_wav)
+
+        if not other_actions.empty():
+            action_dict: dict = other_actions.get()
+            if action_dict["METHOD"] == "BASS_NOTE":
+                bass.set_notes(float(action_dict["NOTE"]) / 2)
+            elif action_dict["METHOD"] == "SR_FREAK":
+                bass.sr_freaks()
 
 
 def test_playback():

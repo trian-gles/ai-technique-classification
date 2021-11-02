@@ -1,13 +1,14 @@
 from typing import Union
 import numpy as np
 from utilities.analysis import TECHNIQUES, int_to_string_results, get_partials
-from webrtcmix import generate_rtcscore, web_request, binary_scores
+from webrtcmix import generate_rtcscore, web_request
 from audiolazy.lazy_midi import freq2midi, midi2str
 import librosa
 from typing import List
 from multiprocessing import Queue, Value, Process
 import queue
 import threading
+from itertools import cycle
 
 
 class Note:
@@ -63,7 +64,7 @@ class NotSilence(Note):
         return high_partials[:3]
 
 
-def dict_to_note(note_dict: dict) -> Note:
+def dict_to_note(note_dict: dict) -> Union[Silence, NotSilence]:
     if int_to_string_results(note_dict["prediction"], TECHNIQUES)[0] == "SILENCE":
         return Silence(note_dict)
     else:
@@ -105,15 +106,19 @@ class NoteStack(Stack):
 
 class Brain:
     """Controls the behaviour of the AI"""
-    def __init__(self, wav_responses: Queue, identified_notes: Queue, ready: Value, finished: Value):
+    def __init__(self, wav_responses: Queue, identified_notes: Queue, other_actions: Queue, ready: Value, finished: Value):
         self.heat = False
         self.prior_notes = NoteStack(7)
 
         self.wav_responses = wav_responses
         self.identified_notes = identified_notes
+        self.other_actions = other_actions
         self.finished = finished
 
         self.total_notes = 0
+
+        harm_choices = ([6, 9], [3, 8])
+        self.current_harm_intervals = cycle(harm_choices)
 
     def main(self):
         while True:
@@ -133,34 +138,32 @@ class Brain:
 
         if self.total_notes < 5: # can't peek at prior notes at the beginning
             return
-        self.check_heat()
+
+
 
         if new_note.prediction == "SILENCE":
             prior_note: Note = self.prior_notes.peek(1)
             if prior_note.prediction == "Pont":
+                prior_note: NotSilence = prior_note
                 high_ps = prior_note.get_high_partials()
                 sco = generate_rtcscore.guitar_partials_score(*high_ps)
                 self.get_send_rtc_response(sco)
 
-        if new_note.prediction == "Harm":
-            if self.prior_notes.check_contains("Harm") and not self.heat:
-                cont = binary_scores.TreeContainer()
-                cont.rand_graph_intervals([6, 9], num_nodes=6, pitches=(("E6"),))
-                sco = cont.get_rtc_score()
-                self.get_send_rtc_response(sco)
-
-        if new_note.prediction == "Chord":
+        elif new_note.prediction == "Tasto":
             new_note: NotSilence = new_note
-            if new_note.amp > 0.2:
-                fund = new_note.get_fundamental()
-                amp = new_note.get_amp()
-                print(f"AMP OF CHORD : {amp}")
-                if fund < 130 and amp > 0.5:
-                    fund_pitch = midi2str(round(freq2midi(fund)))
-                    cont = binary_scores.TreeContainer()
-                    cont.rand_graph_intervals([1, 5], num_nodes=6, pitches=(fund_pitch,))
-                    sco = cont.get_rtc_score()
-                    self.get_send_rtc_response(sco)
+            freq = new_note.get_pitch_or_lowest()
+            print(f"Tasto frequency = {freq}")
+            if freq < 200:
+                self.other_actions.put(
+                    {
+                        "METHOD": "BASS_NOTE",
+                        "NOTE": freq
+                    })
+        elif new_note.prediction == "Harm":
+            self.other_actions.put(
+                {
+                    "METHOD": "SR_FREAK"
+                })
 
     def get_send_rtc_response(self, sco: str):
         new_thread = threading.Thread(target=self.async_rtc_call, args=(sco,))
@@ -169,31 +172,6 @@ class Brain:
     def async_rtc_call(self, sco):
         wav = web_request.webrtc_request(sco)
         self.wav_responses.put(wav)
-
-    def check_heat(self):
-        if self.prior_notes.majority_silence():
-            self.set_heat(False)
-        else:
-            self.set_heat(True)
-
-    def set_heat(self, high: bool):
-        if high != self.heat:
-            if high:
-                print(
-                    """
-                    #############
-                    # HIGH HEAT #
-                    #############
-                    """)
-
-            else:
-                print("""
-                    #############
-                    # LOW HEAT #
-                    #############
-                    """)
-
-        self.heat = high
 
 
 

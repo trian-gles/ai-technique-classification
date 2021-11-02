@@ -20,7 +20,7 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
         if finished.value == 1:  # the main process says it's time to quit
             break
         try:
-            note: np.ndarray = unidentified_notes.get_nowait()
+            note: np.ndarray = resample(unidentified_notes.get_nowait(), orig_sr=44100, target_sr=22050)
         except queue.Empty:
             continue
         else:
