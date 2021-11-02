@@ -3,6 +3,7 @@ from multiprocessing import Queue, Value, Process
 import time
 import numpy as np
 from pyo_presets.huge_bass import StereoBass
+import keyboard
 
 
 class PlaybackTable(DataTable):
@@ -66,8 +67,16 @@ class TableManager:
         return all([t.check_playing() for t in self.tabs])
 
 
+send_out = True
+
+def toggle_send_out():
+    global send_out
+    send_out = not send_out
+    print(f"Send out set to {send_out}")
+
 def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Queue, ready: Value, finished: Value):
     """Still needs to handle new audio"""
+    keyboard.add_hotkey("space", toggle_send_out)
     s = Server(buffersize=2048)
     s.deactivateMidi()
     s.boot()
@@ -81,8 +90,9 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
     count = 0
 
     def callback():
-        tablist = t.getTable()
-        buffer_excerpts.put(tablist)
+        if send_out:
+            tablist = t.getTable()
+            buffer_excerpts.put(tablist)
         rec.play()
 
     s.setCallback(callback)
