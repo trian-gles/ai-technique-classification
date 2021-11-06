@@ -107,6 +107,8 @@ class NoteStack(Stack):
 class Brain:
     """Controls the behaviour of the AI"""
     def __init__(self, wav_responses: Queue, identified_notes: Queue, other_actions: Queue, ready: Value, finished: Value):
+        self.part = 2
+
         self.heat = False
         self.prior_notes = NoteStack(7)
 
@@ -139,8 +141,12 @@ class Brain:
         if self.total_notes < 5: # can't peek at prior notes at the beginning
             return
 
+        if self.part == 1:
+            self.handle_part_1(new_note)
+        else:
+            self.handle_part_2(new_note)
 
-
+    def handle_part_1(self, new_note: Note):
         if new_note.prediction == "SILENCE":
             prior_note: Note = self.prior_notes.peek(1)
             if prior_note.prediction == "Pont":
@@ -163,6 +169,18 @@ class Brain:
             self.other_actions.put(
                 {
                     "METHOD": "SR_FREAK"
+                })
+
+    def handle_part_2(self, new_note: Note):
+        if new_note.prediction == "Smack":
+            self.other_actions.put(
+                {
+                    "METHOD": "ADVANCE_GENERATIVE"
+                })
+        elif new_note.prediction == "Chord":
+            self.other_actions.put(
+                {
+                    "METHOD": "CHANGE_SOUND"
                 })
 
     def get_send_rtc_response(self, sco: str):

@@ -1,15 +1,15 @@
 from pyo import *
-from chopped_samper import ChoppedVox
-from clap import Clap
+from pyo_presets.chopped_samper import ChoppedVox
+from pyo_presets.clap import Clap
 import random
 
 class ChoppedGen:
     def __init__(self):
-        self.cv = ChoppedVox("COY_Halcyon_vocals_70bpm_Bm.wav", 61)
-        self.cv2 = ChoppedVox("COY_Halcyon_vocals_70bpm_Bm.wav", 61)
+        self.cv = ChoppedVox("pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav", 61)
+        self.cv2 = ChoppedVox("pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav", 61)
 
-        self.cvalt = ChoppedVox("Vox_DirtySample_E-D.wav", 64)
-        self.cv2alt = ChoppedVox("Vox_DirtySample_E-D.wav", 64)
+        self.cvalt = ChoppedVox("pyo_presets/Vox_DirtySample_E-D.wav", 64)
+        self.cv2alt = ChoppedVox("pyo_presets/Vox_DirtySample_E-D.wav", 64)
 
         self.clap = Clap()
 

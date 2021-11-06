@@ -3,6 +3,7 @@ from multiprocessing import Queue, Value, Process
 import time
 import numpy as np
 from pyo_presets.huge_bass import StereoBass
+from pyo_presets.chopped_generative import ChoppedGen
 import keyboard
 
 
@@ -76,6 +77,7 @@ def toggle_send_out():
 
 def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Queue, ready: Value, finished: Value):
     """Still needs to handle new audio"""
+
     keyboard.add_hotkey("space", toggle_send_out)
     s = Server(buffersize=2048)
     s.deactivateMidi()
@@ -83,6 +85,10 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
 
     bass = StereoBass()
     freeverb = Freeverb(bass.get_voices(), mul=0.25).out()
+
+    gen_vox = ChoppedGen()
+    gen_vox.get_pyoObj().out()
+
     table_man = TableManager(3, int(s.getSamplingRate()))
     t = DataTable(size=s.getBufferSize())
     inp = Input()
@@ -111,6 +117,11 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
                 bass.set_notes(float(action_dict["NOTE"]) / 2)
             elif action_dict["METHOD"] == "SR_FREAK":
                 bass.sr_freaks()
+            elif action_dict["METHOD"] == "ADVANCE_GENERATIVE":
+                gen_vox.advance_phase()
+            elif action_dict["METHOD"] == "CHANGE_SOUND":
+                gen_vox.change_sound()
+
 
 
 def test_playback():
