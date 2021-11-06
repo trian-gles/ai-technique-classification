@@ -14,7 +14,7 @@ from tensorflow.keras import models
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # use GPU instead of AVX
 dir_path = os.path.dirname(os.path.realpath(__file__))
-path = os.path.join(dir_path, "samples/manual")
+path = os.path.join(dir_path, "../samples/manual")
 
 
 soundfiles = []

@@ -10,31 +10,36 @@ import soundfile
 
 
 
-def save_process(unidentified_notes: Queue):
+def save_process(unidentified_notes: Queue, tech_name: str):
     num_notes = 0
-    tech_name = "TEST"
-    dir_path = os.path.join("samples/manual", tech_name)
+
+    dir_path = os.path.join("../samples/manual", tech_name)
     try:
         os.mkdir(dir_path)
     except OSError:
         print("Technique has already been added.  Appending new training files.")
+        num_notes = len(os.listdir(dir_path)) # start counting from where we left off
     while True:
         try:
             note: np.ndarray = unidentified_notes.get_nowait()
         except queue.Empty:
             continue
         if note_above_threshold(note):
-            soundfile.write(f"samples/manual/{tech_name}/{tech_name}_{num_notes}.wav", note, 44100)
+            soundfile.write(f"../samples/manual/{tech_name}/{tech_name}_{num_notes}.wav", note, 44100)
             num_notes += 1
+            print(f"Saving note {num_notes}")
 
 
 def main():
+    tech_name = input("Enter technique name >")
+
     number_of_processes = 1
 
 
     ###### Set up shared information ######
     buffer_excerpts = Queue()  # contains 2 second snippets of buffer that needs to be split into notes
     unidentified_notes = Queue()  # stores waveforms of prepared notes that must be identified
+    other_actions = Queue()  # Brain control of audio engine
 
     wav_responses = Queue()  # wav files to be played back by the audio server
     ready_count = Value('i', 0)  # track how many processes are ready
@@ -52,12 +57,12 @@ def main():
     note_split = Process(target=parser.mainloop)
     note_split.start()
 
-    saving = Process(target=save_process, args=(unidentified_notes,))
+    saving = Process(target=save_process, args=(unidentified_notes, tech_name))
     saving.start()
 
     print("All processes ready, initiating audio")
     ready.value = 1
-    audio_server(buffer_excerpts, wav_responses, ready, finished)
+    audio_server(buffer_excerpts, wav_responses, other_actions, ready, finished)
 
 
 if __name__ == "__main__":
