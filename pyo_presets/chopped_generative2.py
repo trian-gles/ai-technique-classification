@@ -52,7 +52,6 @@ class ChoppedGen:
 
 
     def playthrough_seq(self):
-        print(f"Index: {self.index} Max Index: {self.max_playback}")
         sound1 = self.cv
         sound2 = self.cv2
 

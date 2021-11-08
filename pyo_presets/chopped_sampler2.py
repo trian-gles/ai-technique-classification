@@ -2,7 +2,6 @@ from pyo import *
 import random
 
 class ChoppedVox(PyoObject):
-    """TODO - make ramps always the same length"""
     def __init__(self, path: str, init_freq: float, dur: float, mul:float=1, add:float=0):
         super(ChoppedVox, self).__init__(mul, add)
 
@@ -21,7 +20,6 @@ class ChoppedVox(PyoObject):
         self._looper.pitch = new_freq / self._init_freq
 
     def play(self, dur=0, delay=0):
-        print(f"Playing chopped vox pitch = {self._looper.pitch}")
         self._looper.dur = self._dur
         self._looper.loopnow()
         self._env.play()
