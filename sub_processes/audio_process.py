@@ -3,7 +3,7 @@ from multiprocessing import Queue, Value, Process
 import time
 import numpy as np
 from pyo_presets.huge_bass import StereoBass
-from pyo_presets.chopped_generative import ChoppedGen
+from pyo_presets.chopped_generative2 import ChoppedGen
 import keyboard
 
 

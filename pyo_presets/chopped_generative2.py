@@ -1,23 +1,20 @@
 from pyo import *
-from pyo_presets.chopped_samper import ChoppedVox
-from pyo_presets.clap import Clap
+from pyo_presets.chopped_sampler2 import ChoppedVox
+from pyo_presets.stereo_clap import StereoClap
 import random
 
 class ChoppedGen:
     def __init__(self):
-        self.cv = ChoppedVox("pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav", 61)
-        self.cv2 = ChoppedVox("pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav", 61)
+        self.cv = ChoppedVox("pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav", midiToHz(61), dur=2, mul=1)
+        self.cv2 = ChoppedVox("pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav", midiToHz(61), dur=2, mul=1)
 
-        self.cvalt = ChoppedVox("pyo_presets/Vox_DirtySample_E-D.wav", 64)
-        self.cv2alt = ChoppedVox("pyo_presets/Vox_DirtySample_E-D.wav", 64)
+        self.cvalt = ChoppedVox("pyo_presets/Vox_DirtySample_E-D.wav", midiToHz(64), dur=2, mul=1)
+        self.cv2alt = ChoppedVox("pyo_presets/Vox_DirtySample_E-D.wav", midiToHz(64), dur=2, mul=1)
 
-        self.clap = Clap()
+        self.clap = StereoClap()
 
         self.noise_env = Adsr()
-        self.noise = Noise()
-
-        self.cv.setLen(0.4)
-        self.cv2.setLen(0.4)
+        self.noise = Noise() + Noise()
 
         self.max_playback = 0
         self.index = 0
@@ -64,17 +61,15 @@ class ChoppedGen:
             sound2 = self.cv2alt
 
         if self.index < self.max_playback:
-            sound1.setFreq(midiToHz(self.note_sequence[self.index] + 81))
-            sound2.setFreq(midiToHz(self.note_sequence[self.index] + 69))
+            sound1.change_freq(midiToHz(self.note_sequence[self.index] + 81))
+            sound2.change_freq(midiToHz(self.note_sequence[self.index] + 69))
             self.clap.set_freq(midiToHz(self.note_sequence[self.index] + 93))
 
             if random.getrandbits(1) == 1:
-                new_start = random.uniform(0, 0.9)
-                sound1.setStart(new_start)
-                sound2.setStart(new_start)
-            sound1.stop()
-            sound2.stop()
-            self.c = CallAfter(self.play_cv, time=.01)
+                new_start = random.uniform(0, 3)
+                sound1.set_start(new_start)
+                sound2.set_start(new_start)
+            self.play_cv()
             self.index += 1
             if (self.max_playback > self.pattern.taps) and (self.index == self.pattern.taps):
                 self.index = 0
@@ -84,7 +79,8 @@ class ChoppedGen:
 if __name__ == "__main__":
     s= Server().boot()
     cg = ChoppedGen()
-    cg.get_pyoObj().out()
+    f = Freeverb(cg.get_pyoObj()).out()
+    f.ctrl()
 
 
     s.gui(locals())

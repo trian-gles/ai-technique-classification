@@ -1,9 +1,10 @@
 from pyo import *
 
-class Clap:
+class StereoClap:
     def __init__(self):
         # TODO - make this stereo
         self.noise = Noise()
+        self.noise2 = Noise()
         self.cutoff = Sig(2800)
         self.width = Sig(300)
 
@@ -11,7 +12,7 @@ class Clap:
         self.env = ExpTable([(0, 0.), (20, 1.), (250, 0.2), (20000, 0.)], 2)
         self.tburst = TrigBurst(self.trig, time=.05, count=2)
         self.tenv = TrigEnv(self.tburst, self.env, dur=2)
-        self.hip = Biquad(self.noise, self.cutoff, q=3, type=1)
+        self.hip = Biquad([self.noise, self.noise2], self.cutoff, q=3, type=1)
         self.lop = ButLP(self.hip, self.cutoff + self.width, mul=self.tenv)
 
     def set_freq(self, new_freq: float):
@@ -22,7 +23,7 @@ class Clap:
         self.width.ctrl([SLMap(20, 20000, 'log', 'value', 300)], "width")
 
     def get_pyoobj(self):
-        return self.lop
+        return self.lop.mix(2)
 
     def play(self):
         self.trig.play()
@@ -33,7 +34,7 @@ if __name__ == "__main__":
     s = Server().boot()
 
 
-    clap = Clap()
+    clap = StereoClap()
 
     pat = Pattern(clap.play, 1)
     pat.ctrl()
