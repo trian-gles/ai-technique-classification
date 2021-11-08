@@ -14,7 +14,7 @@ from tensorflow.keras import models
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # use GPU instead of AVX
 dir_path = os.path.dirname(os.path.realpath(__file__))
-path = os.path.join(dir_path, "../samples/manual")
+path = os.path.join(dir_path, "../samples/manual2")
 
 
 soundfiles = []
@@ -231,5 +231,10 @@ if __name__ == "__main__":
     plt.xlabel('Prediction')
     plt.ylabel('Label')
     plt.show()
-
-    model.save('savedModel')
+    while True:
+        save_model = input("Save model? enter y or n")
+        if save_model == "y":
+            model.save('../savedModel2')
+            break
+        elif save_model == "n":
+            break

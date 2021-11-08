@@ -4,8 +4,9 @@ from typing import List
 import matplotlib.pyplot as plt
 from scipy import signal
 from scipy.fft import rfft, rfftfreq
+import os
 
-TECHNIQUES = ["IGNORE", "Slide", "Tasto", "Harm", "Pont", "Chord", "Smack", "SILENCE"]
+TECHNIQUES = os.listdir("samples/manual2") + ["SILENCE"]
 
 
 def find_onsets(y: np.ndarray, sr: int) -> np.ndarray:
