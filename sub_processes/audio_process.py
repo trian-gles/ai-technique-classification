@@ -121,6 +121,10 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
                 gen_vox.advance_phase()
             elif action_dict["METHOD"] == "CHANGE_SOUND":
                 gen_vox.change_sound()
+            elif action_dict["METHOD"] == "PAUSE":
+                gen_vox.pause(action_dict["COUNT"])
+            elif action_dict["METHOD"] == "DRUMS":
+                gen_vox.drums(24)
 
 
 

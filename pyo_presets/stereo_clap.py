@@ -9,11 +9,12 @@ class StereoClap:
         self.width = Sig(300)
 
         self.trig = Trig()
+        self.onoff = Sig(0)
         self.env = ExpTable([(0, 0.), (20, 1.), (250, 0.2), (20000, 0.)], 2)
         self.tburst = TrigBurst(self.trig, time=.05, count=2)
-        self.tenv = TrigEnv(self.tburst, self.env, dur=2)
+        self.tenv = TrigEnv(self.tburst, self.env, dur=4)
         self.hip = Biquad([self.noise, self.noise2], self.cutoff, q=3, type=1)
-        self.lop = ButLP(self.hip, self.cutoff + self.width, mul=self.tenv)
+        self.lop = ButLP(self.hip, self.cutoff + self.width, mul=self.tenv * self.onoff)
 
     def set_freq(self, new_freq: float):
         self.cutoff.value = new_freq
@@ -27,6 +28,7 @@ class StereoClap:
 
     def play(self):
         self.trig.play()
+        self.onoff.value = 1
 
 
 
