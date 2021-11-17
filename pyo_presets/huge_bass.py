@@ -21,7 +21,7 @@ class HugeBass:
         self.sr_subtraction = Choice(choice=[0.04, 0.05, 0.1, 0.2, 0.09], freq=3, mul=1).play()
         self.degrade = Degrade(sum(self.players) + sum(self.octave_players), bitdepth=3, srscale=1)
 
-        self.mode = "off"
+        self.mode = "on"
 
 
         self.biquad_cutoff_env = Linseg([(0, 0), (1, 0), (2, 40), (4, 0)], loop = False)
@@ -64,6 +64,14 @@ class HugeBass:
         self.biquad_cutoff_env.play()
         self.mode = "on"
 
+    def off(self):
+        self.reg_mul.value = 0
+        self.mode = "off"
+
+    def on(self):
+        self.reg_mul.value = 1 / self.voices
+        self.mode = "on"
+
     def ctrl(self):
         self.biquad.ctrl()
         self.degrade.ctrl()
@@ -77,8 +85,17 @@ class StereoBass:
         return [v.get_pyoobj() for v in self.voices]
 
     def set_notes(self, note):
+        if self.voices[0].mode == 'on':
+            for voice in self.voices:
+                voice.set_note(note)
+
+    def off(self):
         for voice in self.voices:
-            voice.set_note(note)
+            voice.off()
+
+    def on(self):
+        for voice in self.voices:
+            voice.on()
 
     def sr_freaks(self):
         if self.voices[0].mode == 'on':
