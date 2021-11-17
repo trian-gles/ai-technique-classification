@@ -54,6 +54,8 @@ class ChoppedGen:
         if self.pattern.isPlaying():
             return
         self.max_playback += random.randrange(1, 3)
+        if self.max_playback > 12:
+            self.max_playback = self.pattern.taps + 1
         self.index = 0
         self.pattern.play()
 
@@ -82,7 +84,8 @@ class ChoppedGen:
         self.pauses_remaining = count
 
     def drums(self, count: int = 32):
-        self.temp_drum_count = count
+        if self.max_playback == self.pattern.taps + 1:
+            self.temp_drum_count = count
 
     def playthrough_seq(self):
         if self.pauses_remaining > 0:

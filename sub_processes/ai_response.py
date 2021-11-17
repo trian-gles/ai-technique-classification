@@ -108,8 +108,9 @@ class Brain:
     """Controls the behaviour of the AI"""
     def __init__(self, wav_responses: Queue, identified_notes: Queue, other_actions: Queue, ready: Value, finished: Value):
         self.start_time = time.time()
-        self.part = 2
+        self.part = 1
 
+        self.bass_turned_on = True
         self.heat = False
         self.prior_notes = NoteStack(7)
 
@@ -150,6 +151,23 @@ class Brain:
         else:
             self.handle_part_2(new_note)
 
+    def change_part(self):
+        self.part = 2
+        self.bass_off()
+
+
+    def bass_off(self):
+        self.other_actions.put(
+            {
+                "METHOD": "BASS_OFF"
+            })
+
+    def bass_on(self):
+        self.other_actions.put(
+            {
+                "METHOD": "BASS_ON"
+            })
+
     def handle_part_1(self, new_note: Note):
         if new_note.prediction == "SILENCE":
             prior_note: Note = self.prior_notes.peek(1)
@@ -161,7 +179,9 @@ class Brain:
         elif new_note.prediction == "Tasto":
             new_note: NotSilence = new_note
             freq = new_note.get_pitch_or_lowest()
-            print(f"Tasto frequency = {freq}")
+            prior_note: Note = self.prior_notes.peek(1)
+            if prior_note.prediction == "Tasto":
+                return
             if freq < 200:
                 self.other_actions.put(
                     {
@@ -173,6 +193,11 @@ class Brain:
                 {
                     "METHOD": "SR_FREAK"
                 })
+
+        elif new_note.prediction == "Smack":
+            if self.prior_notes.get_predictions()[1:3] == ["Smack", "Smack"]:
+                print("CHANGING TO PART 2")
+                self.change_part()
 
     def handle_part_2(self, new_note: Note):
         if new_note.prediction == "Smack":
@@ -197,6 +222,20 @@ class Brain:
             self.other_actions.put({
                 "METHOD": "DRUMS"
             })
+
+        elif new_note.prediction == "Tasto":
+            new_note: NotSilence = new_note
+            freq = new_note.get_pitch_or_lowest()
+            if self.prior_notes.check_contains("Palm") and freq < 200:
+
+                print("REINTRODUCING BASS")
+
+                self.bass_on()
+                self.other_actions.put(
+                    {
+                        "METHOD": "BASS_NOTE",
+                        "NOTE": freq
+                    })
 
     def get_send_rtc_response(self, sco: str):
         new_thread = threading.Thread(target=self.async_rtc_call, args=(sco,))
