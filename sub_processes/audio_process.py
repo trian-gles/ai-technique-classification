@@ -40,6 +40,9 @@ class PlaybackTable(DataTable):
     def fade_out_stop(self):
         """Fade out this table to make room for new data incoming"""
 
+    def stop(self):
+        self.reader.stop()
+
 
 class TableManager:
     def __init__(self, voices, sr):
@@ -67,6 +70,10 @@ class TableManager:
     def all_tabs_playing(self):
         return all([t.check_playing() for t in self.tabs])
 
+    def stop_all(self):
+        for tab in self.tabs:
+            tab.stop()
+
 
 send_out = True
 
@@ -79,7 +86,7 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
     """Still needs to handle new audio"""
 
     keyboard.add_hotkey("space", toggle_send_out)
-    s = Server(buffersize=2048)
+    s = Server(buffersize=8192)
     s.deactivateMidi()
     s.boot()
 
@@ -117,6 +124,11 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
                 bass.set_notes(float(action_dict["NOTE"]) / 2)
             elif action_dict["METHOD"] == "SR_FREAK":
                 bass.sr_freaks()
+            elif action_dict["METHOD"] == "BASS_OFF":
+                bass.off()
+                table_man.stop_all()
+            elif action_dict["METHOD"] == "BASS_ON":
+                bass.on()
             elif action_dict["METHOD"] == "ADVANCE_GENERATIVE":
                 gen_vox.advance_phase()
             elif action_dict["METHOD"] == "CHANGE_SOUND":
