@@ -16,9 +16,10 @@ class ChoppedGen:
 
         self.snaretab = SndTable("pyo_presets/snare.wav")
         self.kicktab = SndTable("pyo_presets/kick.wav")
+        self.thumptab = SndTable("pyo_presets/thump_1.wav")
         self.snare = TableRead(table=self.snaretab, mul=0.3)
         self.kick = TableRead(table=self.kicktab, mul=0.3, freq=self.kicktab.getRate())
-
+        self.thump = TableRead(table=self.thumptab, mul=0.3, freq=self.thumptab.getRate())
 
         self.clap = StereoClap()
 
@@ -28,7 +29,7 @@ class ChoppedGen:
         self.max_playback = 0
         self.index = 0
 
-        self.pattern = Beat(time=.125, taps=16, w1=[90,80], w2=50, w3=35, poly=1)
+        self.pattern = Beat(time=.125, taps=16, w1=90, w2=50, w3=35, poly=2)
         self.tf = TrigFunc(self.pattern, self.playthrough_seq)
 
         self.pauses_remaining = 0
@@ -41,8 +42,10 @@ class ChoppedGen:
 
         self.changed_sound = False
 
+        self.initial_sequence = []
+
     def get_pyoObj(self):
-        return self.cv + self.cv2 + self.clap.get_pyoobj() + self.cvalt + self.cv2alt + self.kick + self.snare
+        return self.cv + self.cv2 + self.clap.get_pyoobj() + self.cvalt + self.cv2alt + self.kick + self.snare + self.thump
 
     def change_sound(self):
         self.changed_sound = not self.changed_sound
@@ -84,6 +87,7 @@ class ChoppedGen:
     def playthrough_seq(self):
         if self.pauses_remaining > 0:
             self.pauses_remaining -= 1
+            self.thump.play()
             return
 
         sound1 = self.cv
@@ -98,14 +102,26 @@ class ChoppedGen:
             sound2.change_freq(midiToHz(self.note_sequence[self.index] + 69))
             self.clap.set_freq(midiToHz(self.note_sequence[self.index] + 93))
 
-            if random.getrandbits(1) == 1:
-                new_start = random.uniform(0, 3)
+            if len(self.initial_sequence) > (self.index + 1):
+                new_start = self.initial_sequence[self.index]
                 sound1.set_start(new_start)
                 sound2.set_start(new_start)
+            else:
+                if random.getrandbits(1) == 1:
+                    new_start = random.uniform(0, 3)
+                    sound1.set_start(new_start)
+                    sound2.set_start(new_start)
+                self.initial_sequence.append(sound1._looper.start)
             self.play_cv()
             self.index += 1
-            if (self.max_playback > self.pattern.taps) and (self.index == self.pattern.taps):
-                self.index = 0
+
+            if (self.max_playback > self.pattern.taps):
+                if random.getrandbits(1) == 1:
+                    new_start = random.uniform(0, 3)
+                    sound1.set_start(new_start)
+                    sound2.set_start(new_start)
+                if (self.index == self.pattern.taps):
+                    self.index = 0
         else:
             self.pattern.stop()
 
