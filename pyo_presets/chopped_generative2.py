@@ -4,6 +4,7 @@ from pyo_presets.stereo_clap import StereoClap
 import random
 
 class ChoppedGen:
+    # TODO - get a reverse snare sound!!!
     def __init__(self):
         self.cv = ChoppedVox("pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav", midiToHz(61), dur=2, mul=1)
         self.cv2 = ChoppedVox("pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav", midiToHz(61), dur=2, mul=1)
@@ -17,6 +18,9 @@ class ChoppedGen:
         self.snaretab = SndTable("pyo_presets/snare.wav")
         self.kicktab = SndTable("pyo_presets/kick.wav")
         self.thumptab = SndTable("pyo_presets/thump_1.wav")
+        self.rev_snare_tab = SndTable("pyo_presets/rev_snare.wav")
+
+        self.rev_snare = TableRead(table=self.rev_snare_tab, mul=0.4)
         self.snare = TableRead(table=self.snaretab, mul=0.3)
         self.kick = TableRead(table=self.kicktab, mul=0.3, freq=self.kicktab.getRate())
         self.thump = TableRead(table=self.thumptab, mul=0.3, freq=self.thumptab.getRate())
@@ -45,10 +49,12 @@ class ChoppedGen:
         self.initial_sequence = []
 
     def get_pyoObj(self):
-        return self.cv + self.cv2 + self.clap.get_pyoobj() + self.cvalt + self.cv2alt + self.kick + self.snare + self.thump
+        return self.cv + self.cv2 + self.clap.get_pyoobj() + self.cvalt + self.cv2alt + self.kick + self.snare + self.thump + self.rev_snare
 
     def change_sound(self):
         self.changed_sound = not self.changed_sound
+        if self.changed_sound == False:
+            self.pattern.new()
 
     def advance_phase(self):
         if self.pattern.isPlaying():
@@ -74,6 +80,8 @@ class ChoppedGen:
                 self.kick.play()
             elif s == 1:
                 self.snare.play()
+                if random.getrandbits(1):
+                    self.c = CallAfter(self.snare.play, time = .125)
             self.temp_drum_count -= 1
 
 
@@ -91,6 +99,9 @@ class ChoppedGen:
         if self.pauses_remaining > 0:
             self.pauses_remaining -= 1
             self.thump.play()
+
+            if self.pauses_remaining == 4 and self.temp_drum_count > 2:
+                self.rev_snare.play(1)
             return
 
         sound1 = self.cv
@@ -129,7 +140,7 @@ class ChoppedGen:
             self.pattern.stop()
 
 if __name__ == "__main__":
-    s= Server().boot()
+    s= Server(buffersize=512).boot()
     cg = ChoppedGen()
     f = Freeverb(cg.get_pyoObj()).out()
     f.ctrl()
