@@ -6,14 +6,22 @@ import random
 class ChoppedGen:
     # TODO - get a reverse snare sound!!!
     def __init__(self):
-        self.cv = ChoppedVox("pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav", midiToHz(61), dur=2, mul=1)
-        self.cv2 = ChoppedVox("pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav", midiToHz(61), dur=2, mul=1)
+        file1 = "pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav"
 
-        self.cvalt = ChoppedVox("pyo_presets/Vox_DirtySample_E-D.wav", midiToHz(64), dur=2, mul=.8)
-        self.cv2alt = ChoppedVox("pyo_presets/Vox_DirtySample_E-D.wav", midiToHz(64), dur=2, mul=.8)
+        file2 = "pyo_presets/Vox_DirtySample_E-D.wav"
+        file3 = "pyo_presets/guitar.wav"
+        self.cv = ChoppedVox(file1, midiToHz(61), dur=2, mul=1)
+        self.cv2 = ChoppedVox(file1, midiToHz(61), dur=2, mul=1)
+
+        self.cvalt = ChoppedVox(file2, midiToHz(64), dur=2, mul=.8)
+        self.cv2alt = ChoppedVox(file2, midiToHz(64), dur=2, mul=.8)
+
+        self.cvfin = ChoppedVox(file3, midiToHz(61), dur=2, mul=1)
+        self.cv2fin = ChoppedVox(file3, midiToHz(61), dur=2, mul=1)
 
 
         self.temp_drum_count = 0
+        self.finished = False
 
         self.snaretab = SndTable("pyo_presets/snare.wav")
         self.kicktab = SndTable("pyo_presets/kick.wav")
@@ -49,7 +57,8 @@ class ChoppedGen:
         self.initial_sequence = []
 
     def get_pyoObj(self):
-        return self.cv + self.cv2 + self.clap.get_pyoobj() + self.cvalt + self.cv2alt + self.kick + self.snare + self.thump + self.rev_snare
+        return self.cv + self.cv2 + self.clap.get_pyoobj() + self.cvalt + \
+               self.cv2alt + self.kick + self.snare + self.thump + self.rev_snare + self.cvfin + self.cv2fin
 
     def change_sound(self):
         self.changed_sound = not self.changed_sound
@@ -67,7 +76,10 @@ class ChoppedGen:
 
     def play_cv(self):
         self.clap.play()
-        if self.changed_sound:
+        if self.finished:
+            self.cvfin.play()
+            self.cv2fin.play()
+        elif self.changed_sound:
             self.cvalt.play()
             self.cv2alt.play()
         else:
@@ -89,11 +101,19 @@ class ChoppedGen:
         self.pattern.stop()
 
     def pause(self, count: int):
+        if self.finished:
+            return
         self.pauses_remaining = count
 
     def drums(self, count: int = 32):
+        if self.finished:
+            return
         if self.max_playback == self.pattern.taps + 1:
             self.temp_drum_count = count
+
+    def finish(self):
+        self.finished = True
+        self.clap.noise.mul, self.clap.noise2.mul = 0, 0
 
     def playthrough_seq(self):
         if self.pauses_remaining > 0:
@@ -110,6 +130,9 @@ class ChoppedGen:
         if self.changed_sound:
             sound1 = self.cvalt
             sound2 = self.cv2alt
+        elif self.finished:
+            sound1 = self.cvfin
+            sound2 = self.cv2fin
 
         if self.index < self.max_playback:
             sound1.change_freq(midiToHz(self.note_sequence[self.index] + 81))

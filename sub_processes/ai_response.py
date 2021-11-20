@@ -172,6 +172,9 @@ class Brain:
         if new_note.prediction == "SILENCE":
             prior_note: Note = self.prior_notes.peek(1)
         if new_note.prediction == "Pont":
+            prior_note: Note = self.prior_notes.peek(1)
+            if prior_note.prediction == "Pont":
+                return
             high_ps = new_note.get_high_partials()
             sco = generate_rtcscore.guitar_partials_score(*high_ps)
             self.get_send_rtc_response(sco)
@@ -206,6 +209,8 @@ class Brain:
                     "METHOD": "ADVANCE_GENERATIVE"
                 })
         elif new_note.prediction == "Chord":
+            if self.prior_notes.peek(1).prediction == "Chord":
+                return
             self.other_actions.put(
                 {
                     "METHOD": "CHANGE_SOUND"
@@ -235,6 +240,14 @@ class Brain:
                     {
                         "METHOD": "BASS_NOTE",
                         "NOTE": freq
+                    })
+
+        elif new_note.prediction == "High":
+            if self.prior_notes.get_predictions()[1:5] == ["High", "High", "High", "High"]:
+                print("FINISHING")
+                self.other_actions.put(
+                    {
+                        "METHOD": "FINISH"
                     })
 
     def get_send_rtc_response(self, sco: str):

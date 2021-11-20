@@ -5,6 +5,7 @@ import numpy as np
 from pyo_presets.huge_bass import StereoBass
 from pyo_presets.chopped_generative2 import ChoppedGen
 import keyboard
+from threading import Thread
 
 
 class PlaybackTable(DataTable):
@@ -17,13 +18,14 @@ class PlaybackTable(DataTable):
 
     def play_wav(self, arr):
         self.length = arr.shape[0] / 44100
-        samplist = [list(arr[:, 0]), list(arr[:, 1])]
 
-        self.replace(samplist)
+        right = list(arr[:, 0])
+        left = list(arr[:, 1])
+
+        self.replace([right, left])
         self.reader.reset()
 
 
-        self.start_time = time.time()
         self.reader.play().out()
 
     def check_playing(self) -> bool:
@@ -58,7 +60,8 @@ class TableManager:
         init_index = self.cursor
         while True:
             if not self.tabs[self.cursor].check_playing():
-                self.tabs[self.cursor].play_wav(wav)
+                thread = Thread(target=self.tabs[self.cursor].play_wav, args=(wav,))
+                thread.start()
                 break
 
             self.cursor = (self.cursor + 1) % self.voices
@@ -86,7 +89,7 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
     """Still needs to handle new audio"""
 
     keyboard.add_hotkey("space", toggle_send_out)
-    s = Server(buffersize=8192)
+    s = Server(buffersize=512)
     s.deactivateMidi()
     s.boot()
 
@@ -137,6 +140,8 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
                 gen_vox.pause(action_dict["COUNT"])
             elif action_dict["METHOD"] == "DRUMS":
                 gen_vox.drums(24)
+            elif action_dict["METHOD"] == "FINISH":
+                gen_vox.finish()
 
 
 
