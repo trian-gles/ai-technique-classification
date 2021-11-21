@@ -2,6 +2,7 @@ from pyo import *
 from pyo_presets.chopped_sampler2 import ChoppedVox
 from pyo_presets.stereo_clap import StereoClap
 import random
+from itertools import cycle
 
 class ChoppedGen:
     # TODO - get a reverse snare sound!!!
@@ -25,13 +26,18 @@ class ChoppedGen:
 
         self.snaretab = SndTable("pyo_presets/snare.wav")
         self.kicktab = SndTable("pyo_presets/kick.wav")
-        self.thumptab = SndTable("pyo_presets/thump_1.wav")
+        thumpfiles = [os.path.join("pyo_presets/thumps", filename) for filename in os.listdir("pyo_presets/thumps")]
+        self.thumptabs = [SndTable(filename) for filename in thumpfiles]
         self.rev_snare_tab = SndTable("pyo_presets/rev_snare.wav")
 
         self.rev_snare = TableRead(table=self.rev_snare_tab, mul=0.4)
         self.snare = TableRead(table=self.snaretab, mul=0.3)
         self.kick = TableRead(table=self.kicktab, mul=0.3, freq=self.kicktab.getRate())
-        self.thump = TableRead(table=self.thumptab, mul=0.3, freq=self.thumptab.getRate())
+        self.thumps = [TableRead(table=tab, mul=0.3, freq=tab.getRate()) for tab in self.thumptabs]
+        self.thump_cycle = cycle(self.thumps)
+        self.curr_thump = next(self.thump_cycle)
+
+
 
         self.clap = StereoClap()
 
@@ -39,6 +45,7 @@ class ChoppedGen:
         self.noise = Noise() + Noise()
 
         self.max_playback = 0
+        self.maxed = False
         self.index = 0
 
         self.pattern = Beat(time=.125, taps=16, w1=90, w2=50, w3=35, poly=2)
@@ -58,7 +65,7 @@ class ChoppedGen:
 
     def get_pyoObj(self):
         return self.cv + self.cv2 + self.clap.get_pyoobj() + self.cvalt + \
-               self.cv2alt + self.kick + self.snare + self.thump + self.rev_snare + self.cvfin + self.cv2fin
+               self.cv2alt + self.kick + self.snare + sum(self.thumps) + self.rev_snare + self.cvfin + self.cv2fin
 
     def change_sound(self):
         self.changed_sound = not self.changed_sound
@@ -71,6 +78,7 @@ class ChoppedGen:
         self.max_playback += random.randrange(1, 3)
         if self.max_playback > 12:
             self.max_playback = self.pattern.taps + 1
+            self.maxed = True
         self.index = 0
         self.pattern.play()
 
@@ -106,7 +114,7 @@ class ChoppedGen:
         self.pauses_remaining = count
 
     def drums(self, count: int = 32):
-        if self.finished:
+        if self.finished or not self.maxed:
             return
         if self.max_playback == self.pattern.taps + 1:
             self.temp_drum_count = count
@@ -118,7 +126,10 @@ class ChoppedGen:
     def playthrough_seq(self):
         if self.pauses_remaining > 0:
             self.pauses_remaining -= 1
-            self.thump.play()
+            self.curr_thump.play()
+
+            if self.pauses_remaining == 8:
+                self.curr_thump = next(self.thump_cycle)
 
             if self.pauses_remaining == 4 and self.temp_drum_count > 2:
                 self.rev_snare.play(1)
