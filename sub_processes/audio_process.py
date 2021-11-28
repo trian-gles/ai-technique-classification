@@ -142,6 +142,10 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
                 gen_vox.drums(24)
             elif action_dict["METHOD"] == "FINISH":
                 gen_vox.finish()
+            elif action_dict["METHOD"] == "NEW_PATTERN":
+                gen_vox.new()
+                gen_vox.change_sound()
+
 
 
 

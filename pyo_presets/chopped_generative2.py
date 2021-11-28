@@ -104,6 +104,9 @@ class ChoppedGen:
                     self.c = CallAfter(self.snare.play, time = .125)
             self.temp_drum_count -= 1
 
+    def new(self):
+        self.pattern.new()
+
 
     def stop(self):
         self.pattern.stop()
@@ -144,6 +147,10 @@ class ChoppedGen:
         elif self.finished:
             sound1 = self.cvfin
             sound2 = self.cv2fin
+            new_start = random.uniform(0, 3)
+            sound1.set_start(new_start)
+            sound2.set_start(new_start)
+
 
         if self.index < self.max_playback:
             sound1.change_freq(midiToHz(self.note_sequence[self.index] + 81))

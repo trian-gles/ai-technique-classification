@@ -120,6 +120,7 @@ class Brain:
         self.finished = finished
 
         self.total_notes = 0
+        self.smack_count = 0
 
         harm_choices = ([6, 9], [3, 8])
         self.current_harm_intervals = cycle(harm_choices)
@@ -148,12 +149,17 @@ class Brain:
 
         if self.part == 1:
             self.handle_part_1(new_note)
-        else:
+        elif self.part == 2:
             self.handle_part_2(new_note)
+        else:
+            self.handle_part_3(new_note)
 
     def change_part(self):
         self.part = 2
         self.bass_off()
+
+    def change_part_3(self):
+        self.part = 3
 
 
     def bass_off(self):
@@ -204,6 +210,7 @@ class Brain:
 
     def handle_part_2(self, new_note: Note):
         if new_note.prediction == "Smack":
+            self.smack_count += 1
             self.other_actions.put(
                 {
                     "METHOD": "ADVANCE_GENERATIVE"
@@ -231,7 +238,7 @@ class Brain:
         elif new_note.prediction == "Tasto":
             new_note: NotSilence = new_note
             freq = new_note.get_pitch_or_lowest()
-            if self.prior_notes.check_contains("Palm") and freq < 200:
+            if self.prior_notes.check_contains("Palm") and freq < 200 and self.smack_count > 10:
 
                 print("REINTRODUCING BASS")
 
@@ -243,12 +250,26 @@ class Brain:
                     })
 
         elif new_note.prediction == "High":
-            if self.prior_notes.get_predictions()[1:5] == ["High", "High", "High", "High"]:
+            if self.prior_notes.get_predictions()[1:4] == ["High", "High", "High" ]:
                 print("FINISHING")
                 self.other_actions.put(
                     {
                         "METHOD": "FINISH"
                     })
+                self.change_part_3()
+
+    def handle_part_3(self, new_note: Note):
+        if new_note.prediction == "Harm":
+            self.other_actions.put(
+                {
+                    "METHOD": "BASS_OFF"
+                })
+        if new_note.prediction == "Smack":
+            self.other_actions.put(
+                {
+                    "METHOD": "NEW_PATTERN"
+                })
+
 
     def get_send_rtc_response(self, sco: str):
         new_thread = threading.Thread(target=self.async_rtc_call, args=(sco,))
