@@ -1,19 +1,20 @@
-import tensorflow as tf
+
 import os
 import librosa
 from utilities.analysis import plot_prediction
 
 import time
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # use GPU instead of AVX
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # use GPU instead of AVX
+import tensorflow as tf
 dir_path = os.path.dirname(os.path.realpath(__file__))
 path = os.path.join(dir_path, "samples/manual")
 
 #techniques = (tf.io.gfile.listdir(path))
 techniques = ["IGNORE", "Slide", "Chord", "Harm", "Pont", "Tasto", "Smack"]
 
-test_basefiles = os.listdir("../test_sampls")
-test_files = [os.path.join("../test_sampls", bf) for bf in test_basefiles]
+test_basefiles = os.listdir("samples/manual/TEST")
+test_files = [os.path.join("samples/manual/TEST", bf) for bf in test_basefiles]
 
 #print(techniques)
 

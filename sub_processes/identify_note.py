@@ -9,9 +9,10 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
     """Subprocess which will classify notes in unidentified_notes and place them in identified_notes"""
     #  I should use time to make sure this ALWAYS lasts the same amount of time
     #  TODO - MAKE SURE NOTES ARENT AT WRONG SAMPLING RATE
+    print(f"Loading tensorflow in {current_process().name}")
     import tensorflow as tfp
     print(f"Starting process {current_process().name}")
-    model = tfp.keras.models.load_model("savedModel")
+    model = tfp.keras.models.load_model("savedModel2")
     print(f"Model loaded for {current_process().name}")
     ready_count.value += 1
     while ready.value == 0:  # wait for all processes to be ready
@@ -20,7 +21,8 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
         if finished.value == 1:  # the main process says it's time to quit
             break
         try:
-            note: np.ndarray = resample(unidentified_notes.get_nowait(), orig_sr=44100, target_sr=22050)
+            # note: np.ndarray = resample(unidentified_notes.get_nowait(), orig_sr=44100, target_sr=22050)
+            note: np.ndarray = unidentified_notes.get_nowait()
         except queue.Empty:
             continue
         else:
@@ -30,7 +32,7 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
             result_dict["waveform"] = note
 
             if not note_above_threshold(note): # This note is a silence!!!!!
-                result_dict["prediction"] = [7 for _ in range(6)]
+                result_dict["prediction"] = [11 for _ in range(10)]
                 identified_notes.put(result_dict)
                 continue
 

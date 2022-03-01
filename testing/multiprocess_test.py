@@ -10,7 +10,7 @@ from sub_processes.buffer_split import SplitNoteParser
 from utilities.analysis import find_onsets, TECHNIQUES, plot_prediction, numpy_to_tfdata, prediction_to_int_ranks
 
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # use GPU instead of AVX
 
 def main():
     techniques = TECHNIQUES

@@ -6,8 +6,10 @@ from scipy import signal
 from scipy.fft import rfft, rfftfreq
 import os
 
-TECHNIQUES = os.listdir("samples/manual2") + ["SILENCE"]
-
+TECHNIQUES = ['High', 'Tasto', 'Bend', 'Harm', 'Strum', 'Pont', 'Ord', 'Chord', 'Smack', 'Palm', 'TEST', 'SILENCE']
+#TECHNIQUES =  os.listdir("samples/manual") + ["SILENCE"]
+# ['Bend', 'Chord', 'Harm', 'High', 'Ord', 'Palm', 'Pont', 'Smack', 'Strum', 'Tasto', 'TEST', 'SILENCE']
+#   high    tasto  bend     harm    strum  pont     ord     chord    smack    palm
 
 def find_onsets(y: np.ndarray, sr: int) -> np.ndarray:
     """Takes a numpy array and returns an array of onsets, currenly using librosa"""
@@ -106,3 +108,5 @@ def get_partials(waveform: np.ndarray, sr: int) -> List[float]:
     return list(sorted_freqs)
 
 
+if __name__ == "__main__":
+    print(TECHNIQUES)

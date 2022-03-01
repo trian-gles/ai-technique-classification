@@ -5,6 +5,7 @@ import numpy as np
 from pyo_presets.huge_bass import StereoBass
 from pyo_presets.chopped_generative2 import ChoppedGen
 import keyboard
+from threading import Thread
 
 
 class PlaybackTable(DataTable):
@@ -17,13 +18,14 @@ class PlaybackTable(DataTable):
 
     def play_wav(self, arr):
         self.length = arr.shape[0] / 44100
-        samplist = [list(arr[:, 0]), list(arr[:, 1])]
 
-        self.replace(samplist)
+        right = list(arr[:, 0])
+        left = list(arr[:, 1])
+
+        self.replace([right, left])
         self.reader.reset()
 
 
-        self.start_time = time.time()
         self.reader.play().out()
 
     def check_playing(self) -> bool:
@@ -40,6 +42,9 @@ class PlaybackTable(DataTable):
     def fade_out_stop(self):
         """Fade out this table to make room for new data incoming"""
 
+    def stop(self):
+        self.reader.stop()
+
 
 class TableManager:
     def __init__(self, voices, sr):
@@ -55,7 +60,8 @@ class TableManager:
         init_index = self.cursor
         while True:
             if not self.tabs[self.cursor].check_playing():
-                self.tabs[self.cursor].play_wav(wav)
+                thread = Thread(target=self.tabs[self.cursor].play_wav, args=(wav,))
+                thread.start()
                 break
 
             self.cursor = (self.cursor + 1) % self.voices
@@ -66,6 +72,10 @@ class TableManager:
 
     def all_tabs_playing(self):
         return all([t.check_playing() for t in self.tabs])
+
+    def stop_all(self):
+        for tab in self.tabs:
+            tab.stop()
 
 
 send_out = True
@@ -79,7 +89,7 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
     """Still needs to handle new audio"""
 
     keyboard.add_hotkey("space", toggle_send_out)
-    s = Server(buffersize=2048)
+    s = Server(buffersize=512)
     s.deactivateMidi()
     s.boot()
 
@@ -117,10 +127,29 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
                 bass.set_notes(float(action_dict["NOTE"]) / 2)
             elif action_dict["METHOD"] == "SR_FREAK":
                 bass.sr_freaks()
+            elif action_dict["METHOD"] == "BASS_OFF":
+                print("TURNING OFF BASS")
+                bass.off()
+                table_man.stop_all()
+            elif action_dict["METHOD"] == "BASS_ON":
+                bass.on()
             elif action_dict["METHOD"] == "ADVANCE_GENERATIVE":
                 gen_vox.advance_phase()
             elif action_dict["METHOD"] == "CHANGE_SOUND":
                 gen_vox.change_sound()
+            elif action_dict["METHOD"] == "PAUSE":
+                gen_vox.pause(action_dict["COUNT"])
+            elif action_dict["METHOD"] == "DRUMS":
+                gen_vox.drums(24)
+            elif action_dict["METHOD"] == "FINISH":
+                gen_vox.finish()
+            elif action_dict["METHOD"] == "NEW_PATTERN":
+                gen_vox.new()
+                gen_vox.change_sound()
+            elif action_dict["METHOD"] == "END_PIECE":
+                print("END PIECE SIGNAL RECEIVED")
+                gen_vox.master_vol.value = 0
+
 
 
 

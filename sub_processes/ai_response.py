@@ -2,13 +2,13 @@ from typing import Union
 import numpy as np
 from utilities.analysis import TECHNIQUES, int_to_string_results, get_partials
 from webrtcmix import generate_rtcscore, web_request
-from audiolazy.lazy_midi import freq2midi, midi2str
 import librosa
 from typing import List
-from multiprocessing import Queue, Value, Process
+from multiprocessing import Queue, Value
 import queue
 import threading
 from itertools import cycle
+import time
 
 
 class Note:
@@ -41,7 +41,7 @@ class NotSilence(Note):
 
 
     def get_fundamental(self):
-        freqs, _, _ = librosa.pyin(self.waveform, 80, 1279) # 80 is the lowest note on the guitar
+        freqs, _, _ = librosa.pyin(self.waveform, 20, 1279) # 80 is the lowest note on the guitar
         freqs = np.array(list(filter(lambda freq: not np.isnan(freq), freqs))) # get rid of nan
         return np.average(freqs)
 
@@ -107,8 +107,10 @@ class NoteStack(Stack):
 class Brain:
     """Controls the behaviour of the AI"""
     def __init__(self, wav_responses: Queue, identified_notes: Queue, other_actions: Queue, ready: Value, finished: Value):
-        self.part = 2
+        self.start_time = time.time()
+        self.part = 1
 
+        self.bass_turned_on = True
         self.heat = False
         self.prior_notes = NoteStack(7)
 
@@ -118,9 +120,14 @@ class Brain:
         self.finished = finished
 
         self.total_notes = 0
+        self.smack_count = 0
+        self.bass_rein_count = 0
 
         harm_choices = ([6, 9], [3, 8])
         self.current_harm_intervals = cycle(harm_choices)
+
+    def get_time_since_start(self):
+        return time.time() - self.start_time
 
     def main(self):
         while True:
@@ -143,22 +150,48 @@ class Brain:
 
         if self.part == 1:
             self.handle_part_1(new_note)
-        else:
+        elif self.part == 2:
             self.handle_part_2(new_note)
+        else:
+            self.handle_part_3(new_note)
+
+    def change_part(self):
+        self.part = 2
+        self.bass_off()
+
+    def change_part_3(self):
+        self.part = 3
+
+
+    def bass_off(self):
+        self.other_actions.put(
+            {
+                "METHOD": "BASS_OFF"
+            })
+
+    def bass_on(self):
+        self.other_actions.put(
+            {
+                "METHOD": "BASS_ON"
+            })
 
     def handle_part_1(self, new_note: Note):
         if new_note.prediction == "SILENCE":
             prior_note: Note = self.prior_notes.peek(1)
+        if new_note.prediction == "Pont":
+            prior_note: Note = self.prior_notes.peek(1)
             if prior_note.prediction == "Pont":
-                prior_note: NotSilence = prior_note
-                high_ps = prior_note.get_high_partials()
-                sco = generate_rtcscore.guitar_partials_score(*high_ps)
-                self.get_send_rtc_response(sco)
+                return
+            high_ps = new_note.get_high_partials()
+            sco = generate_rtcscore.guitar_partials_score(*high_ps)
+            self.get_send_rtc_response(sco)
 
         elif new_note.prediction == "Tasto":
             new_note: NotSilence = new_note
             freq = new_note.get_pitch_or_lowest()
-            print(f"Tasto frequency = {freq}")
+            prior_note: Note = self.prior_notes.peek(1)
+            if prior_note.prediction == "Tasto":
+                return
             if freq < 200:
                 self.other_actions.put(
                     {
@@ -171,17 +204,82 @@ class Brain:
                     "METHOD": "SR_FREAK"
                 })
 
+        elif new_note.prediction == "Smack":
+            if self.prior_notes.get_predictions()[1:].count("Smack") >= 3:
+                print("CHANGING TO PART 2")
+                self.change_part()
+
     def handle_part_2(self, new_note: Note):
         if new_note.prediction == "Smack":
+            self.smack_count += 1
             self.other_actions.put(
                 {
                     "METHOD": "ADVANCE_GENERATIVE"
                 })
         elif new_note.prediction == "Chord":
+            if self.prior_notes.peek(1).prediction == "Chord":
+                return
             self.other_actions.put(
                 {
                     "METHOD": "CHANGE_SOUND"
                 })
+
+        elif new_note.prediction == "Palm":
+            self.other_actions.put(
+                {
+                    "METHOD": "PAUSE",
+                    "COUNT": 16
+                })
+
+        elif new_note.prediction == "Bend":
+            self.other_actions.put({
+                "METHOD": "DRUMS"
+            })
+
+        elif new_note.prediction == "Tasto":
+            new_note: NotSilence = new_note
+            freq = new_note.get_pitch_or_lowest()
+            early_section_check = (self.prior_notes.check_contains("Palm") and freq < 200 and self.smack_count > 10)
+            later_section_check = (self.bass_rein_count > 2)
+            if early_section_check or later_section_check:
+                self.bass_rein_count += 1
+                print("CHANGING BASS")
+
+                self.bass_on()
+                self.other_actions.put(
+                    {
+                        "METHOD": "BASS_NOTE",
+                        "NOTE": freq
+                    })
+
+        elif new_note.prediction == "High":
+            if self.prior_notes.get_predictions()[1:].count("High") >= 3 and (self.bass_rein_count > 2):
+                print("FINISHING")
+                self.other_actions.put(
+                    {
+                        "METHOD": "FINISH"
+                    })
+                self.change_part_3()
+
+    def handle_part_3(self, new_note: Note):
+        if new_note.prediction == "Harm":
+            self.other_actions.put(
+                {
+                    "METHOD": "BASS_OFF"
+                })
+        elif new_note.prediction == "Smack":
+            self.other_actions.put(
+                {
+                    "METHOD": "NEW_PATTERN"
+                })
+
+        elif new_note.prediction == "Tasto":
+            print("END PIECE SIGNAL SENT")
+            self.other_actions.put(
+                {
+                    "METHOD": "END_PIECE"
+                })
+
 
     def get_send_rtc_response(self, sco: str):
         new_thread = threading.Thread(target=self.async_rtc_call, args=(sco,))
