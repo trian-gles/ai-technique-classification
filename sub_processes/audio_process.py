@@ -128,6 +128,7 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
             elif action_dict["METHOD"] == "SR_FREAK":
                 bass.sr_freaks()
             elif action_dict["METHOD"] == "BASS_OFF":
+                print("TURNING OFF BASS")
                 bass.off()
                 table_man.stop_all()
             elif action_dict["METHOD"] == "BASS_ON":
@@ -145,6 +146,9 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
             elif action_dict["METHOD"] == "NEW_PATTERN":
                 gen_vox.new()
                 gen_vox.change_sound()
+            elif action_dict["METHOD"] == "END_PIECE":
+                print("END PIECE SIGNAL RECEIVED")
+                gen_vox.master_vol.value = 0
 
 
 

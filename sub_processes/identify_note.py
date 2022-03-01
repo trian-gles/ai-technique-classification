@@ -9,6 +9,7 @@ def identification_process(unidentified_notes: Queue, identified_notes: Queue,
     """Subprocess which will classify notes in unidentified_notes and place them in identified_notes"""
     #  I should use time to make sure this ALWAYS lasts the same amount of time
     #  TODO - MAKE SURE NOTES ARENT AT WRONG SAMPLING RATE
+    print(f"Loading tensorflow in {current_process().name}")
     import tensorflow as tfp
     print(f"Starting process {current_process().name}")
     model = tfp.keras.models.load_model("savedModel2")

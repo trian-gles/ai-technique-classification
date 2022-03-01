@@ -121,6 +121,7 @@ class Brain:
 
         self.total_notes = 0
         self.smack_count = 0
+        self.bass_rein_count = 0
 
         harm_choices = ([6, 9], [3, 8])
         self.current_harm_intervals = cycle(harm_choices)
@@ -204,7 +205,7 @@ class Brain:
                 })
 
         elif new_note.prediction == "Smack":
-            if self.prior_notes.get_predictions()[1:3] == ["Smack", "Smack"]:
+            if self.prior_notes.get_predictions()[1:].count("Smack") >= 3:
                 print("CHANGING TO PART 2")
                 self.change_part()
 
@@ -238,9 +239,11 @@ class Brain:
         elif new_note.prediction == "Tasto":
             new_note: NotSilence = new_note
             freq = new_note.get_pitch_or_lowest()
-            if self.prior_notes.check_contains("Palm") and freq < 200 and self.smack_count > 10:
-
-                print("REINTRODUCING BASS")
+            early_section_check = (self.prior_notes.check_contains("Palm") and freq < 200 and self.smack_count > 10)
+            later_section_check = (self.bass_rein_count > 2)
+            if early_section_check or later_section_check:
+                self.bass_rein_count += 1
+                print("CHANGING BASS")
 
                 self.bass_on()
                 self.other_actions.put(
@@ -250,7 +253,7 @@ class Brain:
                     })
 
         elif new_note.prediction == "High":
-            if self.prior_notes.get_predictions()[1:4] == ["High", "High", "High" ]:
+            if self.prior_notes.get_predictions()[1:].count("High") >= 3 and (self.bass_rein_count > 2):
                 print("FINISHING")
                 self.other_actions.put(
                     {
@@ -264,10 +267,17 @@ class Brain:
                 {
                     "METHOD": "BASS_OFF"
                 })
-        if new_note.prediction == "Smack":
+        elif new_note.prediction == "Smack":
             self.other_actions.put(
                 {
                     "METHOD": "NEW_PATTERN"
+                })
+
+        elif new_note.prediction == "Tasto":
+            print("END PIECE SIGNAL SENT")
+            self.other_actions.put(
+                {
+                    "METHOD": "END_PIECE"
                 })
 
 

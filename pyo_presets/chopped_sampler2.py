@@ -1,8 +1,10 @@
 from pyo import *
+from typing import Union
 import random
 
+
 class ChoppedVox(PyoObject):
-    def __init__(self, path: str, init_freq: float, dur: float, mul:float=1, add:float=0):
+    def __init__(self, path: str, init_freq: float, dur: float, mul: Union[float, PyoObject] = 1, add: float = 0):
         super(ChoppedVox, self).__init__(mul, add)
 
         self._dur = dur
@@ -29,7 +31,6 @@ class ChoppedVox(PyoObject):
 
     def ctrl(self, map_list=None, title=None, wxnoserver=False):
         self._env.ctrl()
-
 
 
 if __name__ == "__main__":

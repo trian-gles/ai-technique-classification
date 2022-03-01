@@ -1,16 +1,18 @@
-import numpy as np
-from multiprocessing import Process, Queue, Value
-from sub_processes.ai_response import Brain
-from sub_processes.buffer_split import SplitNoteParser
-from sub_processes.identify_note import identification_process
-from sub_processes.audio_process import audio_server
-import os
-
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # use GPU instead of AVX
-
-
 def main():
+    print("Loading libraries")
+    from multiprocessing import Process, Queue, Value
+    import os
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # use GPU instead of AVX
+    print("Loading brain")
+    from sub_processes.ai_response import Brain
+    print("Loading note split")
+    from sub_processes.buffer_split import SplitNoteParser
+    print("Loading identification")
+    from sub_processes.identify_note import identification_process
+    print("Loading audio")
+    from sub_processes.audio_process import audio_server
+    print("Libraries imported")
+
     number_of_processes = 1
 
 

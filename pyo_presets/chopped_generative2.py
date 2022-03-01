@@ -1,25 +1,27 @@
 from pyo import *
 from pyo_presets.chopped_sampler2 import ChoppedVox
 from pyo_presets.stereo_clap import StereoClap
+from pyo_presets.drones import Drone
 import random
 from itertools import cycle
 
 class ChoppedGen:
-    # TODO - get a reverse snare sound!!!
     def __init__(self):
         file1 = "pyo_presets/COY_Halcyon_vocals_70bpm_Bm.wav"
 
         file2 = "pyo_presets/Vox_DirtySample_E-D.wav"
         file3 = "pyo_presets/guitar.wav"
-        self.cv = ChoppedVox(file1, midiToHz(61), dur=2, mul=1)
-        self.cv2 = ChoppedVox(file1, midiToHz(61), dur=2, mul=1)
+        self.master_vol = SigTo(1, time=3)
+        self.cv = ChoppedVox(file1, midiToHz(61), dur=2, mul=self.master_vol)
+        self.cv2 = ChoppedVox(file1, midiToHz(61), dur=2, mul=self.master_vol)
 
-        self.cvalt = ChoppedVox(file2, midiToHz(64), dur=2, mul=.8)
-        self.cv2alt = ChoppedVox(file2, midiToHz(64), dur=2, mul=.8)
+        self.cvalt = ChoppedVox(file2, midiToHz(64), dur=2, mul=self.master_vol * .8)
+        self.cv2alt = ChoppedVox(file2, midiToHz(64), dur=2, mul=self.master_vol * .8)
 
-        self.cvfin = ChoppedVox(file3, midiToHz(61), dur=2, mul=1)
-        self.cv2fin = ChoppedVox(file3, midiToHz(61), dur=2, mul=1)
+        self.cvfin = ChoppedVox(file3, midiToHz(61), dur=2, mul=self.master_vol)
+        self.cv2fin = ChoppedVox(file3, midiToHz(61), dur=2, mul=self.master_vol)
 
+        self.drone = Drone(0.07)
 
         self.temp_drum_count = 0
         self.finished = False
@@ -73,6 +75,8 @@ class ChoppedGen:
             self.pattern.new()
 
     def advance_phase(self):
+        self.drone.off()
+
         if self.pattern.isPlaying():
             return
         self.max_playback += random.randrange(1, 3)
@@ -113,6 +117,9 @@ class ChoppedGen:
 
     def pause(self, count: int):
         if self.finished:
+            return
+
+        if (0 < self.pauses_remaining < 4) and self.temp_drum_count > 2:
             return
         self.pauses_remaining = count
 
@@ -179,6 +186,7 @@ class ChoppedGen:
                     self.index = 0
         else:
             self.pattern.stop()
+            self.drone.new_pitch(self.note_sequence[self.index - 1] + 69)
 
 if __name__ == "__main__":
     s= Server(buffersize=512).boot()

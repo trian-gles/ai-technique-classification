@@ -9,10 +9,11 @@ class HugeBass:
         self.square_table = HarmTable(saw_harms)
         self.freq = SigTo(value=0, time=.1)
 
+        self.master_mastervol = SigTo(value=1, time=2, init=1)
         self.reg_mul = SigTo(value= 1 / voices, time=2, init= 1 / voices)
         self.oct_mul = SigTo(value=0, time=2, init=0)
 
-        self.players = [Osc(mul=self.reg_mul, freq=self.freq * random.uniform(0.97, 1.03),
+        self.players = [Osc(mul=self.reg_mul * self.master_mastervol, freq=self.freq * random.uniform(0.97, 1.03),
                             table=self.square_table, phase=random.uniform(0, 1)).play() for _ in range(voices)]
 
         self.octave_players = [Osc(mul=self.oct_mul, freq=self.freq * random.uniform(0.90, 1.1) * 8,
@@ -30,7 +31,6 @@ class HugeBass:
         self.biquad = Biquad(self.degrade, freq=self.freq * self.biquad_cutoff_mul, q=0.56)
 
 
-
     def get_pyoobj(self):
         return self.biquad
 
@@ -40,6 +40,8 @@ class HugeBass:
 
     def sr_freakout(self):
         """TODO - can you make this gradual"""
+        if self.mode == "off":
+            return
         self.mode = "sr"
         self.c = CallAfter(self.pitch_return, 4.5)
         self.degrade.srscale = self.sr_subtraction
@@ -65,11 +67,13 @@ class HugeBass:
         self.mode = "on"
 
     def off(self):
+        self.master_mastervol.value = 0
         self.reg_mul.value = 0
         self.mode = "off"
 
     def on(self):
         self.reg_mul.value = 1 / self.voices
+        self.master_mastervol.value = 1
         self.mode = "on"
 
     def ctrl(self):
