@@ -110,6 +110,7 @@ class Brain:
         self.client = None
 
         if ip:
+            print(f"Sending OSC to MAX MSP at ip {ip}")
             self.client = Client(ip)
 
         self.start_time = time.time()
@@ -208,6 +209,9 @@ class Brain:
                 {
                     "METHOD": "SR_FREAK"
                 })
+
+            if self.client:
+                self.client.send_clar()
 
         elif new_note.prediction == "Smack":
             if self.prior_notes.get_predictions()[1:].count("Smack") >= 3:

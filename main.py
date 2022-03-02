@@ -61,6 +61,6 @@ def main(ip: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('ip', type=str, default=None)
+    parser.add_argument('-ip', type=str, default=None)
     args = parser.parse_args()
     main(args.ip)
