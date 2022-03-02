@@ -1,4 +1,7 @@
-def main():
+import argparse
+
+
+def main(ip: str):
     print("Loading libraries")
     from multiprocessing import Process, Queue, Value
     import os
@@ -30,7 +33,7 @@ def main():
 
     ###### Create objects for individual processes ######
     parser = SplitNoteParser(buffer_excerpts, unidentified_notes, ready, finished)
-    brain = Brain(wav_responses, identified_notes, other_actions, ready, finished)
+    brain = Brain(wav_responses, identified_notes, other_actions, ready, finished, ip)
 
     ###### Start all the processes ######
     print("Loading tensorflow models...")
@@ -57,4 +60,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('ip', type=str, default=None)
+    args = parser.parse_args()
+    main(args.ip)

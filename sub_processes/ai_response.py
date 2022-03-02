@@ -2,8 +2,9 @@ from typing import Union
 import numpy as np
 from utilities.analysis import TECHNIQUES, int_to_string_results, get_partials
 from webrtcmix import generate_rtcscore, web_request
+from max.max_query import Client
 import librosa
-from typing import List
+from typing import List, cast
 from multiprocessing import Queue, Value
 import queue
 import threading
@@ -32,13 +33,11 @@ class NotSilence(Note):
         super().__init__(note_dict)
         self.spectrogram = note_dict["spectrogram"]
 
-
     def get_pitch_or_lowest(self):
         if self.prediction == "Chord":
             return self.get_lowest_partial()
         else:
             return self.get_fundamental()
-
 
     def get_fundamental(self):
         freqs, _, _ = librosa.pyin(self.waveform, 20, 1279) # 80 is the lowest note on the guitar
@@ -52,7 +51,6 @@ class NotSilence(Note):
 
     def get_amp(self) -> float:
         return np.max(self.waveform)
-
 
     def get_high_partials(self) -> List[float]:
         fund = self.get_fundamental()
@@ -104,9 +102,16 @@ class NoteStack(Stack):
         if prediction in preds[1:]:
             return True
 
+
 class Brain:
     """Controls the behaviour of the AI"""
-    def __init__(self, wav_responses: Queue, identified_notes: Queue, other_actions: Queue, ready: Value, finished: Value):
+    def __init__(self, wav_responses: Queue, identified_notes: Queue,
+                 other_actions: Queue, ready: Value, finished: Value, ip: Union[str, None] = None):
+        self.client = None
+
+        if ip:
+            self.client = Client(ip)
+
         self.start_time = time.time()
         self.part = 1
 
@@ -178,13 +183,13 @@ class Brain:
     def handle_part_1(self, new_note: Note):
         if new_note.prediction == "SILENCE":
             prior_note: Note = self.prior_notes.peek(1)
+        new_note = cast(NotSilence, new_note)
+
         if new_note.prediction == "Pont":
             prior_note: Note = self.prior_notes.peek(1)
             if prior_note.prediction == "Pont":
                 return
-            high_ps = new_note.get_high_partials()
-            sco = generate_rtcscore.guitar_partials_score(*high_ps)
-            self.get_send_rtc_response(sco)
+            self.guitar_arps(new_note)
 
         elif new_note.prediction == "Tasto":
             new_note: NotSilence = new_note
@@ -237,7 +242,7 @@ class Brain:
             })
 
         elif new_note.prediction == "Tasto":
-            new_note: NotSilence = new_note
+            new_note = cast(NotSilence, new_note)
             freq = new_note.get_pitch_or_lowest()
             early_section_check = (self.prior_notes.check_contains("Palm") and freq < 200 and self.smack_count > 10)
             later_section_check = (self.bass_rein_count > 2)
@@ -280,6 +285,13 @@ class Brain:
                     "METHOD": "END_PIECE"
                 })
 
+    def guitar_arps(self, note: NotSilence):
+        high_ps = note.get_high_partials()
+        if self.client:
+            self.client.send_arps(*high_ps)
+        else:
+            sco = generate_rtcscore.guitar_partials_score(*high_ps)
+            self.get_send_rtc_response(sco)
 
     def get_send_rtc_response(self, sco: str):
         new_thread = threading.Thread(target=self.async_rtc_call, args=(sco,))
