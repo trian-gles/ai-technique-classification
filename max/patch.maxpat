@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 1589.0, 573.0, 571.0, 480.0 ],
+		"rect" : [ 1084.0, 607.0, 882.0, 480.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -78,7 +78,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 1270.0, 658.0, 640.0, 480.0 ],
+						"rect" : [ 1467.0, 619.0, 640.0, 480.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -108,6 +108,54 @@
 						"assistshowspatchername" : 0,
 						"boxes" : [ 							{
 								"box" : 								{
+									"id" : "obj-10",
+									"maxclass" : "button",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "bang" ],
+									"parameter_enable" : 0,
+									"patching_rect" : [ 99.0, 146.0, 24.0, 24.0 ]
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-8",
+									"maxclass" : "button",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "bang" ],
+									"parameter_enable" : 0,
+									"patching_rect" : [ 332.989672064781189, 187.628855466842651, 24.0, 24.0 ]
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-4",
+									"maxclass" : "button",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "bang" ],
+									"parameter_enable" : 0,
+									"patching_rect" : [ 223.0, 108.0, 24.0, 24.0 ]
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-2",
+									"maxclass" : "newobj",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "bang" ],
+									"patching_rect" : [ 213.979377746582031, 155.618555545806885, 67.0, 22.0 ],
+									"text" : "delay 3000"
+								}
+
+							}
+, 							{
+								"box" : 								{
 									"comment" : "",
 									"id" : "obj-1",
 									"index" : 1,
@@ -126,7 +174,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 2,
 									"outlettype" : [ "bang", "bang" ],
-									"patching_rect" : [ 107.249997854232788, 128.741370916366577, 32.0, 22.0 ],
+									"patching_rect" : [ 148.0, 206.741370916366577, 32.0, 22.0 ],
 									"text" : "t b b"
 								}
 
@@ -138,7 +186,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 210.249997854232788, 172.741370916366577, 52.0, 22.0 ],
+									"patching_rect" : [ 251.0, 250.741370916366577, 52.0, 22.0 ],
 									"text" : "var 1 $1"
 								}
 
@@ -150,7 +198,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "int" ],
-									"patching_rect" : [ 196.249997854232788, 137.741370916366577, 79.0, 22.0 ],
+									"patching_rect" : [ 237.0, 215.741370916366577, 79.0, 22.0 ],
 									"text" : "random 2000"
 								}
 
@@ -161,7 +209,7 @@
 									"maxclass" : "ezdac~",
 									"numinlets" : 2,
 									"numoutlets" : 0,
-									"patching_rect" : [ 141.249997854232788, 290.741370916366577, 45.0, 45.0 ]
+									"patching_rect" : [ 182.0, 368.741370916366577, 45.0, 45.0 ]
 								}
 
 							}
@@ -172,8 +220,8 @@
 									"numinlets" : 2,
 									"numoutlets" : 3,
 									"outlettype" : [ "signal", "signal", "" ],
-									"patching_rect" : [ 94.249997854232788, 178.452579140663147, 58.0, 22.0 ],
-									"save" : [ "#N", "rtcmix~", 2, 0, ";", "#X", "restore", 0, 706, 706, "load(\"MCLAR\")\nload(\"FREEVERB\")\n\nbus_config(\"MCLAR\", \"aux 0 out\")\nbus_config(\"FREEVERB\", \"aux 0 in\", \"out 0-1\")\n\n\nsrand($1)\n\nst = 0\npitch = irand(59, 71)\nbreath = 0.8\n\nenv = maketable(\"line\", 1000, 0, 0, 1, 1, 2, 0.6, 3, 0.6, 4, 0)\n\nfor(i = 0; i < irand(10, 15); i = i + 1)\n{\n\tMCLAR(st, 0.20, 15000 * env, cpsmidi(pitch), 0.2, 0.7, 0.5, 0.5, breath)\n\tpitch += -(2 + rand() / 5) + ((i + 1) % 2) * (rand() + 1) * 9\n\tbreath = breath - 0.001\n\tst += 0.12\n}\n\noutskip = 0\ninskip = 0\ndur = st + 2\namp = .1\nroomsize = maketable(\"line\", 1000, 0, 0.7, 1, 1)\npredelay = .03\nringdur = 3\ndamp = 70\ndry = 40\nwet = 40\nwidth = 100\n   \n \nFREEVERB(outskip, inskip, dur, amp, roomsize, predelay, ringdur, damp, dry, wet, width)", ";" ],
+									"patching_rect" : [ 135.0, 256.452579140663147, 58.0, 22.0 ],
+									"save" : [ "#N", "rtcmix~", 2, 0, ";", "#X", "restore", 0, 706, 706, "load(\"MCLAR\")\nload(\"FREEVERB\")\n\nbus_config(\"MCLAR\", \"aux 0 out\")\nbus_config(\"FREEVERB\", \"aux 0 in\", \"out 0-1\")\n\n\nsrand($1)\n\nst = 0\npitch = irand(59, 71)\nbreath = 0.7\n\nenv = maketable(\"line\", 1000, 0, 0, 1, 1, 2, 0.6, 3, 0.6, 4, 0)\n\nfor(i = 0; i < irand(10, 15); i = i + 1)\n{\n\tMCLAR(st, 0.20, 20000 * env, cpsmidi(pitch), 0.2, 0.7, 0.5, 0.5, breath)\n\tpitch += -(2 + rand() / 5) + ((i + 1) % 2) * (rand() + 1) * 9\n\tbreath = breath - 0.001\n\tst += 0.12\n}\n\noutskip = 0\ninskip = 0\ndur = st + 2\namp = .1\nroomsize = maketable(\"line\", 1000, 0, 0.7, 1, 1)\npredelay = .03\nringdur = 3\ndamp = 70\ndry = 40\nwet = 40\nwidth = 100\n   \n \nFREEVERB(outskip, inskip, dur, amp, roomsize, predelay, ringdur, damp, dry, wet, width)", ";" ],
 									"text" : "rtcmix~ 2"
 								}
 
@@ -181,8 +229,15 @@
  ],
 						"lines" : [ 							{
 								"patchline" : 								{
-									"destination" : [ "obj-17", 0 ],
+									"destination" : [ "obj-4", 0 ],
 									"source" : [ "obj-1", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-17", 0 ],
+									"source" : [ "obj-10", 0 ]
 								}
 
 							}
@@ -211,6 +266,29 @@
 								"patchline" : 								{
 									"destination" : [ "obj-6", 0 ],
 									"source" : [ "obj-17", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-17", 0 ],
+									"order" : 1,
+									"source" : [ "obj-2", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-8", 0 ],
+									"order" : 0,
+									"source" : [ "obj-2", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-2", 0 ],
+									"source" : [ "obj-4", 0 ]
 								}
 
 							}
