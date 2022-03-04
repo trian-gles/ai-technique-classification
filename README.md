@@ -3,6 +3,7 @@ A musical piece built with PYO and Tensorflow.
 
 ## Listen/Watch:
 click image to watch
+<br>
 [![YoutubeVid](https://img.youtube.com/vi/U-J3ins1Buk/0.jpg)](https://www.youtube.com/watch?v=U-J3ins1Buk)
 
 
