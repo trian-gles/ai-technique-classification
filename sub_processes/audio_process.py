@@ -125,6 +125,7 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
             action_dict: dict = other_actions.get()
             if action_dict["METHOD"] == "BASS_NOTE":
                 bass.set_notes(float(action_dict["NOTE"]) / 2)
+                gen_vox.query_trans(round(action_dict["NOTE"]))
             elif action_dict["METHOD"] == "SR_FREAK":
                 bass.sr_freaks()
             elif action_dict["METHOD"] == "BASS_OFF":
@@ -144,7 +145,6 @@ def audio_server(buffer_excerpts: Queue, wav_responses: Queue, other_actions: Qu
             elif action_dict["METHOD"] == "FINISH":
                 gen_vox.finish()
             elif action_dict["METHOD"] == "NEW_PATTERN":
-                gen_vox.new()
                 gen_vox.change_sound()
             elif action_dict["METHOD"] == "END_PIECE":
                 print("END PIECE SIGNAL RECEIVED")

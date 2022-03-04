@@ -4,6 +4,8 @@ from pyo_presets.stereo_clap import StereoClap
 from pyo_presets.drones import Drone
 import random
 from itertools import cycle
+from utilities.CONSTANTS import TRANSDICT
+
 
 class ChoppedGen:
     def __init__(self):
@@ -21,7 +23,11 @@ class ChoppedGen:
         self.cvfin = ChoppedVox(file3, midiToHz(61), dur=2, mul=self.master_vol)
         self.cv2fin = ChoppedVox(file3, midiToHz(61), dur=2, mul=self.master_vol)
 
+        self.fin_dist = Degrade(self.cvfin + self.cv2fin, mul=1)
+        #self.fin_dist.ctrl()
+
         self.drone = Drone(0.07)
+        self.play_drone = False
 
         self.temp_drum_count = 0
         self.finished = False
@@ -60,6 +66,7 @@ class ChoppedGen:
         scale += [n + 12 for n in scale]
 
         self.note_sequence = random.choices(scale, k=24)
+        self.transposition = 0
 
         self.changed_sound = False
 
@@ -67,12 +74,20 @@ class ChoppedGen:
 
     def get_pyoObj(self):
         return self.cv + self.cv2 + self.clap.get_pyoobj() + self.cvalt + \
-               self.cv2alt + self.kick + self.snare + sum(self.thumps) + self.rev_snare + self.cvfin + self.cv2fin
+               self.cv2alt + self.kick + self.snare + sum(self.thumps) + self.rev_snare + self.fin_dist
 
     def change_sound(self):
         self.changed_sound = not self.changed_sound
         if self.changed_sound == False:
             self.pattern.new()
+
+        if self.finished:
+            self.fin_dist.bitdepth -= 2.5
+            self.fin_dist.srscale /= 2
+
+    def max(self):
+        self.maxed = True
+        self.max_playback = 12
 
     def advance_phase(self):
         self.drone.off()
@@ -111,6 +126,8 @@ class ChoppedGen:
     def new(self):
         self.pattern.new()
 
+    def query_trans(self, trans: int):
+        self.transposition = TRANSDICT[trans % 12]
 
     def stop(self):
         self.pattern.stop()
@@ -130,6 +147,7 @@ class ChoppedGen:
             self.temp_drum_count = count
 
     def finish(self):
+        self.pattern.new()
         self.finished = True
         self.clap.noise.mul, self.clap.noise2.mul = 0, 0
 
@@ -151,7 +169,8 @@ class ChoppedGen:
         if self.changed_sound:
             sound1 = self.cvalt
             sound2 = self.cv2alt
-        elif self.finished:
+
+        if self.finished:
             sound1 = self.cvfin
             sound2 = self.cv2fin
             new_start = random.uniform(0, 3)
@@ -160,8 +179,8 @@ class ChoppedGen:
 
 
         if self.index < self.max_playback:
-            sound1.change_freq(midiToHz(self.note_sequence[self.index] + 81))
-            sound2.change_freq(midiToHz(self.note_sequence[self.index] + 69))
+            sound1.change_freq(midiToHz(self.note_sequence[self.index] + 81 + self.transposition))
+            sound2.change_freq(midiToHz(self.note_sequence[self.index] + 69 + self.transposition))
             self.clap.set_freq(midiToHz(self.note_sequence[self.index] + 93))
 
             if len(self.initial_sequence) > (self.index + 1):
@@ -186,7 +205,10 @@ class ChoppedGen:
                     self.index = 0
         else:
             self.pattern.stop()
-            self.drone.new_pitch(self.note_sequence[self.index - 1] + 69)
+            if self.play_drone:
+                self.drone.new_pitch(self.note_sequence[self.index - 1] + 69)
+            else:
+                self.play_drone = True
 
 if __name__ == "__main__":
     s= Server(buffersize=512).boot()
