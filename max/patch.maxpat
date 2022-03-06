@@ -150,7 +150,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "bang" ],
 									"patching_rect" : [ 213.979377746582031, 155.618555545806885, 67.0, 22.0 ],
-									"text" : "delay 3000"
+									"text" : "delay 1500"
 								}
 
 							}
@@ -1293,6 +1293,7 @@
 						"style" : "",
 						"subpatcher_template" : "",
 						"assistshowspatchername" : 0,
+						"visible" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
 									"id" : "obj-17",
