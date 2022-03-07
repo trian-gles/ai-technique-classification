@@ -56,6 +56,8 @@ class NotSilence(Note):
         fund = self.get_fundamental()
         all_partials = get_partials(self.waveform, 22050)
         high_partials = list(filter(lambda freq: freq > fund * 2, all_partials))
+        if not high_partials:
+            return [1000, 2000, 3000]
         while len(high_partials) < 3: # make sure there are at least 3 partials
             first_part = high_partials[0]
             high_partials.append(first_part)
@@ -258,6 +260,12 @@ class Brain:
                 self.other_actions.put(
                     {
                         "METHOD": "BASS_NOTE",
+                        "NOTE": freq
+                    })
+
+                self.other_actions.put(
+                    {
+                        "METHOD": "TRANS_GENERATIVE",
                         "NOTE": freq
                     })
 
