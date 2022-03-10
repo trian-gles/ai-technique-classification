@@ -12,6 +12,6 @@ class Client:
 
 
 if __name__ == "__main__":
-    c = Client("192.168.1.3")
+    c = Client("192.168.1.2")
     c.send_arps(440, 880, 1220)
     c.send_clar()
