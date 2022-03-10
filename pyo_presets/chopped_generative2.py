@@ -33,7 +33,7 @@ class ChoppedGen:
         self.finished = False
 
         self.snaretab = SndTable("pyo_presets/snare.wav")
-        self.kicktab = SndTable("pyo_presets/kick.wav")
+        self.kicktab = SndTable("pyo_presets/Kick.wav")
         thumpfiles = [os.path.join("pyo_presets/thumps", filename) for filename in os.listdir("pyo_presets/thumps")]
         self.thumptabs = [SndTable(filename) for filename in thumpfiles]
         self.rev_snare_tab = SndTable("pyo_presets/rev_snare.wav")
